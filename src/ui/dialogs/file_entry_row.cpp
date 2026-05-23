@@ -5,10 +5,7 @@
 #include "render/core/color.h"
 #include "render/core/renderer.h"
 #include "time/time_format.h"
-#include "ui/controls/box.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -71,37 +68,42 @@ FileEntryRow::FileEntryRow(float scale) : m_scale(scale), m_rowHeight(std::ceil(
     }
   });
 
-  auto background = std::make_unique<Box>();
-  background->setRadius(Style::scaledRadiusMd(scale));
+  auto background = ui::box({
+      .radius = Style::scaledRadiusMd(scale),
+  });
   m_background = static_cast<Box*>(addChild(std::move(background)));
 
-  auto row = std::make_unique<Flex>();
-  row->setDirection(FlexDirection::Horizontal);
-  row->setAlign(FlexAlign::Center);
-  row->setGap(Style::spaceSm * scale);
-  row->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+  auto row = ui::row({
+      .align = FlexAlign::Center,
+      .gap = Style::spaceSm * scale,
+      .configure = [scale](Flex& container) { container.setPadding(Style::spaceXs * scale, Style::spaceSm * scale); },
+  });
   m_row = static_cast<Flex*>(addChild(std::move(row)));
 
-  auto icon = std::make_unique<Glyph>();
-  icon->setGlyphSize(Style::fontSizeBody * scale);
+  auto icon = ui::glyph({
+      .glyphSize = Style::fontSizeBody * scale,
+  });
   m_icon = static_cast<Glyph*>(m_row->addChild(std::move(icon)));
 
-  auto name = std::make_unique<Label>();
-  name->setFontSize(Style::fontSizeBody * scale);
-  name->setMaxLines(1);
-  name->setFlexGrow(1.0f);
+  auto name = ui::label({
+      .fontSize = Style::fontSizeBody * scale,
+      .maxLines = 1,
+      .flexGrow = 1.0f,
+  });
   m_name = static_cast<Label*>(m_row->addChild(std::move(name)));
 
-  auto size = std::make_unique<Label>();
-  size->setFontSize(Style::fontSizeCaption * scale);
-  size->setTextAlign(TextAlign::End);
-  size->setMinWidth(kSizeColumnWidth * scale);
+  auto size = ui::label({
+      .fontSize = Style::fontSizeCaption * scale,
+      .minWidth = kSizeColumnWidth * scale,
+      .textAlign = TextAlign::End,
+  });
   m_size = static_cast<Label*>(m_row->addChild(std::move(size)));
 
-  auto date = std::make_unique<Label>();
-  date->setFontSize(Style::fontSizeCaption * scale);
-  date->setTextAlign(TextAlign::End);
-  date->setMinWidth(kDateColumnWidth * scale);
+  auto date = ui::label({
+      .fontSize = Style::fontSizeCaption * scale,
+      .minWidth = kDateColumnWidth * scale,
+      .textAlign = TextAlign::End,
+  });
   m_date = static_cast<Label*>(m_row->addChild(std::move(date)));
 
   setVisible(false);

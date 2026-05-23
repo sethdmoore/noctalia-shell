@@ -3,10 +3,7 @@
 #include "render/core/color.h"
 #include "render/core/renderer.h"
 #include "render/core/thumbnail_service.h"
-#include "ui/controls/box.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -44,28 +41,33 @@ FileEntryTile::FileEntryTile(float scale, ThumbnailService* thumbnails) : m_scal
     }
   });
 
-  auto background = std::make_unique<Box>();
-  background->setRadius(Style::scaledRadiusLg(scale));
+  auto background = ui::box({
+      .radius = Style::scaledRadiusLg(scale),
+  });
   m_background = static_cast<Box*>(addChild(std::move(background)));
 
-  auto preview = std::make_unique<Box>();
-  preview->setCardStyle(scale);
-  preview->setRadius(Style::scaledRadiusMd(scale));
+  auto preview = ui::box({
+      .radius = Style::scaledRadiusMd(scale),
+      .cardStyleScale = scale,
+  });
   m_preview = static_cast<Box*>(addChild(std::move(preview)));
 
-  auto image = std::make_unique<Image>();
-  image->setFit(ImageFit::Contain);
-  image->setVisible(false);
+  auto image = ui::image({
+      .fit = ImageFit::Contain,
+      .visible = false,
+  });
   m_image = static_cast<Image*>(addChild(std::move(image)));
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyphSize(36.0f * scale);
+  auto glyph = ui::glyph({
+      .glyphSize = 36.0f * scale,
+  });
   m_glyph = static_cast<Glyph*>(addChild(std::move(glyph)));
 
-  auto label = std::make_unique<Label>();
-  label->setFontSize(Style::fontSizeCaption * scale);
-  label->setMaxLines(1);
-  label->setTextAlign(TextAlign::Center);
+  auto label = ui::label({
+      .fontSize = Style::fontSizeCaption * scale,
+      .maxLines = 1,
+      .textAlign = TextAlign::Center,
+  });
   m_label = static_cast<Label*>(addChild(std::move(label)));
 
   setVisible(false);

@@ -267,6 +267,76 @@ namespace ui {
     return control;
   }
 
+  std::unique_ptr<Box> box(BoxProps props) {
+    auto control = std::make_unique<Box>();
+    if (props.cardStyleScale.has_value()) {
+      control->setCardStyle(*props.cardStyleScale, props.cardStyleFillOpacity.value_or(1.0f),
+                            props.cardStyleShowBorder.value_or(true));
+    }
+    if (props.fill.has_value()) {
+      control->setFill(*props.fill);
+    }
+    if (props.radius.has_value()) {
+      control->setRadius(*props.radius);
+    }
+    if (props.softness.has_value()) {
+      control->setSoftness(*props.softness);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Glyph> glyph(GlyphProps props) {
+    auto control = std::make_unique<Glyph>();
+    if (props.glyph.has_value()) {
+      (void)control->setGlyph(*props.glyph);
+    }
+    if (props.codepoint.has_value()) {
+      (void)control->setCodepoint(*props.codepoint);
+    }
+    if (props.glyphSize.has_value()) {
+      control->setGlyphSize(*props.glyphSize);
+    }
+    if (props.color.has_value()) {
+      control->setColor(*props.color);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Image> image(ImageProps props) {
+    auto control = std::make_unique<Image>();
+    if (props.fit.has_value()) {
+      control->setFit(*props.fit);
+    }
+    if (props.radius.has_value()) {
+      control->setRadius(*props.radius);
+    }
+    if (props.padding.has_value()) {
+      control->setPadding(*props.padding);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
   std::unique_ptr<Separator> separator(SeparatorProps props) {
     auto control = std::make_unique<Separator>();
     if (props.color.has_value()) {
