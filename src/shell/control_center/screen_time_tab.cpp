@@ -1,6 +1,5 @@
 #include "shell/control_center/screen_time_tab.h"
 
-#include "config/config_service.h"
 #include "i18n/i18n.h"
 #include "render/core/color.h"
 #include "render/core/renderer.h"
@@ -20,7 +19,6 @@
 #include "ui/controls/label.h"
 #include "ui/controls/scroll_view.h"
 #include "ui/controls/segmented.h"
-#include "ui/controls/toggle.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -73,7 +71,7 @@ namespace {
   Label* makeSectionHeader(Flex& parent, const std::string& text, float scale) {
     auto label = std::make_unique<Label>();
     label->setText(text);
-    label->setBold(true);
+    label->setFontWeight(FontWeight::Bold);
     label->setFontSize(Style::fontSizeCaption * scale);
     label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
     auto* ptr = label.get();
@@ -123,8 +121,7 @@ namespace {
 
 } // namespace
 
-ScreenTimeTab::ScreenTimeTab(ScreenTimeService* screenTime, ConfigService* config)
-    : m_screenTime(screenTime), m_config(config) {}
+ScreenTimeTab::ScreenTimeTab(ScreenTimeService* screenTime) : m_screenTime(screenTime) {}
 
 std::unique_ptr<Flex> ScreenTimeTab::create() {
   const float scale = contentScale();
@@ -132,63 +129,8 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
   auto tab = std::make_unique<Flex>();
   tab->setDirection(FlexDirection::Vertical);
   tab->setAlign(FlexAlign::Stretch);
+  tab->setGap(Style::spaceSm * scale);
   m_root = tab.get();
-
-  auto scroll = std::make_unique<ScrollView>();
-  scroll->setFlexGrow(1.0f);
-  scroll->setScrollbarVisible(true);
-  scroll->clearFill();
-  scroll->clearBorder();
-
-  auto* content = scroll->content();
-  content->setDirection(FlexDirection::Vertical);
-  content->setAlign(FlexAlign::Stretch);
-  content->setGap(Style::spaceLg * scale);
-
-  auto usageCard = std::make_unique<Flex>();
-  applySectionCardStyle(*usageCard, scale, panelCardOpacity());
-  usageCard->setDirection(FlexDirection::Vertical);
-  usageCard->setGap(Style::spaceMd * scale);
-  m_usageCard = usageCard.get();
-
-  auto enableRow = std::make_unique<Flex>();
-  enableRow->setDirection(FlexDirection::Horizontal);
-  enableRow->setAlign(FlexAlign::Center);
-  enableRow->setGap(Style::spaceSm * scale);
-  enableRow->setMinHeight(Style::controlHeightSm * scale);
-
-  auto enableLabel = std::make_unique<Label>();
-  enableLabel->setText(i18n::tr("control-center.screen-time.enabled"));
-  enableLabel->setFontSize(Style::fontSizeBody * scale);
-  enableLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  enableLabel->setFlexGrow(1.0f);
-  enableRow->addChild(std::move(enableLabel));
-
-  auto enabledToggle = std::make_unique<Toggle>();
-  enabledToggle->setToggleSize(ToggleSize::Small);
-  enabledToggle->setScale(scale);
-  enabledToggle->setCheckedImmediate(m_screenTime != nullptr && m_screenTime->enabled());
-  enabledToggle->setOnChange([this](bool checked) {
-    if (m_config != nullptr) {
-      (void)m_config->setOverride({"shell", "screen_time_enabled"}, checked);
-    } else if (m_screenTime != nullptr) {
-      m_screenTime->setEnabled(checked);
-    }
-    syncEnabledUi();
-    m_lastSnapshotKey.clear();
-    PanelManager::instance().refresh();
-  });
-  m_enabledToggle = enabledToggle.get();
-  enableRow->addChild(std::move(enabledToggle));
-  usageCard->addChild(std::move(enableRow));
-
-  auto disabled = std::make_unique<Label>();
-  disabled->setFontSize(Style::fontSizeBody * scale);
-  disabled->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  disabled->setText(i18n::tr("control-center.screen-time.disabled"));
-  disabled->setVisible(false);
-  m_disabledLabel = disabled.get();
-  usageCard->addChild(std::move(disabled));
 
   auto rangePicker = std::make_unique<Segmented>();
   rangePicker->setScale(scale);
@@ -206,10 +148,35 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
     PanelManager::instance().refresh();
   });
   m_rangePicker = rangePicker.get();
-  usageCard->addChild(std::move(rangePicker));
+  tab->addChild(std::move(rangePicker));
+
+  auto scroll = std::make_unique<ScrollView>();
+  scroll->setFlexGrow(1.0f);
+  scroll->setScrollbarVisible(true);
+  scroll->clearFill();
+  scroll->clearBorder();
+
+  auto* content = scroll->content();
+  content->setDirection(FlexDirection::Vertical);
+  content->setAlign(FlexAlign::Stretch);
+  content->setGap(Style::spaceLg * scale);
+
+  auto usageCard = std::make_unique<Flex>();
+  applySectionCardStyle(*usageCard, scale, panelCardOpacity(), panelBordersEnabled());
+  usageCard->setDirection(FlexDirection::Vertical);
+  usageCard->setGap(Style::spaceMd * scale);
+  m_usageCard = usageCard.get();
+
+  auto disabled = std::make_unique<Label>();
+  disabled->setFontSize(Style::fontSizeBody * scale);
+  disabled->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+  disabled->setText(i18n::tr("control-center.screen-time.disabled"));
+  disabled->setVisible(false);
+  m_disabledLabel = disabled.get();
+  usageCard->addChild(std::move(disabled));
 
   auto total = std::make_unique<Label>();
-  total->setBold(true);
+  total->setFontWeight(FontWeight::Bold);
   total->setFontSize(Style::fontSizeHeader * 1.6f * scale);
   total->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_totalLabel = total.get();
@@ -433,7 +400,6 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
 
   mostUsedSection->addChild(std::move(appsGrid));
   content->addChild(std::move(mostUsedSection));
-  scroll->setFlexGrow(1.0f);
   tab->addChild(std::move(scroll));
   syncEnabledUi();
   m_paletteConn = paletteChanged().connect([this] {
@@ -446,7 +412,6 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
 void ScreenTimeTab::onClose() {
   m_root = nullptr;
   m_usageCard = nullptr;
-  m_enabledToggle = nullptr;
   m_disabledLabel = nullptr;
   m_rangePicker = nullptr;
   m_chartPlotRow = nullptr;
@@ -467,18 +432,12 @@ void ScreenTimeTab::setActive(bool active) {
   m_active = active;
   if (m_active) {
     m_lastSnapshotKey.clear();
-    if (m_enabledToggle != nullptr && m_screenTime != nullptr) {
-      m_enabledToggle->setChecked(m_screenTime->enabled());
-    }
     syncEnabledUi();
   }
 }
 
 void ScreenTimeTab::syncEnabledUi() {
   const bool enabled = m_screenTime != nullptr && m_screenTime->enabled();
-  if (m_enabledToggle != nullptr) {
-    m_enabledToggle->setChecked(enabled);
-  }
   if (m_disabledLabel != nullptr) {
     m_disabledLabel->setVisible(!enabled);
   }

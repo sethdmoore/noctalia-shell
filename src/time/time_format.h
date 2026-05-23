@@ -2,8 +2,10 @@
 
 #include <chrono>
 #include <cstdint>
+#include <ctime>
 #include <filesystem>
 #include <string>
+#include <string_view>
 
 std::string formatTimeAgo(std::chrono::system_clock::time_point tp);
 
@@ -29,6 +31,9 @@ std::string formatTimeAgo(std::chrono::system_clock::time_point tp);
 
 // Formats an ISO 8601 time string (e.g. "2026-05-09T06:23") using the given format.
 [[nodiscard]] std::string formatIsoTime(std::string_view isoTime, const char* fmt);
+
+// Formats a std::tm with strftime semantics using a dynamically sized buffer.
+[[nodiscard]] std::string formatStrftime(std::string_view fmt, const std::tm& tm);
 
 // Formats a filesystem modification time as "YYYY-MM-DD HH:MM".
 [[nodiscard]] std::string formatFileTime(const std::filesystem::file_time_type& time);

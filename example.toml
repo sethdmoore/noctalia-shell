@@ -38,6 +38,8 @@ alpha    = 0.55                     # multiplied by each component's background 
 [shell.panel]
 background_blur       = true        # request compositor blur behind panels
 transparency_mode     = "solid"     # solid | soft | glass; controls floating/centered opacity and card translucency
+borders               = true        # panel shell outline and in-panel section cards
+shadow                = true        # cast the global [shell.shadow] from panel surfaces
 launcher_placement       = "centered" # attached | floating | centered
 clipboard_placement      = "centered" # attached | floating | centered
 control_center_placement = "attached" # attached | floating | centered
@@ -122,7 +124,9 @@ offset_y           = 8              # absolute vertical margin from the screen e
 [osd]
 position = "top_right"              # top_right | top_left | top_center | bottom_right | bottom_left | bottom_center | center_right | center_left
 orientation = "horizontal"          # horizontal | vertical
+scale = 1.0                         # OSD size multiplier applied on top of shell.ui_scale
 lock_keys = true                    # show Caps/Num/Scroll Lock OSD popups; disable to stop polling when no widget uses them
+keyboard_layout = true            # show an OSD popup when the input keyboard layout changes
 
 # ── System Monitor ────────────────────────────────────────────────────────────
 
@@ -223,7 +227,7 @@ auto_hide          = false
 reserve_space      = true
 capsule            = false
 # capsule_fill     = "surface_variant"
-# capsule_radius   = 8.0            # omit/blank in Settings for automatic pill radius
+# capsule_radius   = 8.0            # omit/blank in Settings for automatic pill radius; 0.0 = square
 # capsule_opacity  = 1.0
 # capsule_border   = "outline"      # uncomment for a border on all widgets
 

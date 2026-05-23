@@ -176,9 +176,9 @@ void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot) {
   logSlowRenderOperation(ms, "renderScene took {:.1f}ms total", ms);
 }
 
-TextMetrics RenderContext::measureText(std::string_view text, float fontSize, bool bold, float maxWidth, int maxLines,
-                                       TextAlign align, std::string_view fontFamily) {
-  auto m = m_textRenderer.measure(text, fontSize, bold, maxWidth, maxLines, align, fontFamily);
+TextMetrics RenderContext::measureText(std::string_view text, float fontSize, FontWeight fontWeight, float maxWidth,
+                                       int maxLines, TextAlign align, std::string_view fontFamily) {
+  auto m = m_textRenderer.measure(text, fontSize, fontWeight, maxWidth, maxLines, align, fontFamily);
   return TextMetrics{.width = m.width,
                      .left = m.left,
                      .right = m.right,
@@ -190,8 +190,8 @@ TextMetrics RenderContext::measureText(std::string_view text, float fontSize, bo
                      .inkRight = m.inkRight};
 }
 
-TextMetrics RenderContext::measureFont(float fontSize, bool bold) {
-  auto m = m_textRenderer.measureFont(fontSize, bold);
+TextMetrics RenderContext::measureFont(float fontSize, FontWeight fontWeight) {
+  auto m = m_textRenderer.measureFont(fontSize, fontWeight);
   return TextMetrics{.width = m.width,
                      .left = m.left,
                      .right = m.right,
@@ -205,8 +205,8 @@ TextMetrics RenderContext::measureFont(float fontSize, bool bold) {
 
 void RenderContext::measureTextCursorStops(std::string_view text, float fontSize,
                                            const std::vector<std::size_t>& byteOffsets, std::vector<float>& outStops,
-                                           bool bold) {
-  m_textRenderer.measureCursorStops(text, fontSize, byteOffsets, outStops, bold);
+                                           FontWeight fontWeight) {
+  m_textRenderer.measureCursorStops(text, fontSize, byteOffsets, outStops, fontWeight);
 }
 
 TextMetrics RenderContext::measureGlyph(char32_t codepoint, float fontSize) {
@@ -269,11 +269,11 @@ void RenderContext::renderNode(const Node* node, const Mat3& parentTransform, fl
         shadowColor.a *= effectiveOpacity;
         const Mat3 shadowTransform = worldTransform * Mat3::translation(text->shadowOffsetX(), text->shadowOffsetY());
         m_textRenderer.draw(sw, sh, 0.0f, 0.0f, text->text(), text->fontSize(), shadowColor, shadowTransform,
-                            text->bold(), text->maxWidth(), text->maxLines(), text->textAlign(), font);
+                            text->fontWeight(), text->maxWidth(), text->maxLines(), text->textAlign(), font);
       }
       auto color = text->color();
       color.a *= effectiveOpacity;
-      m_textRenderer.draw(sw, sh, 0.0f, 0.0f, text->text(), text->fontSize(), color, worldTransform, text->bold(),
+      m_textRenderer.draw(sw, sh, 0.0f, 0.0f, text->text(), text->fontSize(), color, worldTransform, text->fontWeight(),
                           text->maxWidth(), text->maxLines(), text->textAlign(), font);
     }
     break;

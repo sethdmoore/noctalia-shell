@@ -19,6 +19,7 @@
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -41,12 +42,13 @@ namespace settings {
       return std::string(lane);
     }
 
-    std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color, bool bold = false) {
+    std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color,
+                                     FontWeight fontWeight = FontWeight::Normal) {
       auto label = std::make_unique<Label>();
       label->setText(text);
       label->setFontSize(fontSize);
       label->setColor(color);
-      label->setBold(bold);
+      label->setFontWeight(fontWeight);
       return label;
     }
 
@@ -179,6 +181,7 @@ namespace settings {
     const auto pickerEntries = widgetPickerEntries(config);
     std::vector<SearchPickerOption> normalOptions;
     std::vector<SearchPickerOption> instanceOptions;
+    std::unordered_map<std::string, std::string> presetScripts;
     normalOptions.reserve(pickerEntries.size());
     instanceOptions.reserve(pickerEntries.size());
 
@@ -190,6 +193,10 @@ namespace settings {
           .enabled = true,
           .icon = entry.icon,
       });
+
+      if (entry.kind == WidgetReferenceKind::Preset && !entry.script.empty()) {
+        presetScripts[entry.value] = entry.script;
+      }
 
       if (entry.kind != WidgetReferenceKind::BuiltIn) {
         continue;
@@ -224,12 +231,13 @@ namespace settings {
     m_config = &config;
     m_normalOptions = std::move(normalOptions);
     m_instanceOptions = std::move(instanceOptions);
+    m_presetScripts = std::move(presetScripts);
     m_lanePath = lanePath;
     m_root = nullptr;
     m_headerRow = nullptr;
     m_createActions = nullptr;
     m_searchPicker = nullptr;
-    m_createTitle = nullptr;
+    m_instanceDescription = nullptr;
     m_instanceInput = nullptr;
     m_instanceModeEnabled = false;
     m_createFormVisible = false;
@@ -275,9 +283,9 @@ namespace settings {
         refreshPickerOptions();
       }
     }
-    if (m_createTitle != nullptr) {
-      m_createTitle->setVisible(m_createFormVisible);
-      m_createTitle->setParticipatesInLayout(m_createFormVisible);
+    if (m_instanceDescription != nullptr) {
+      m_instanceDescription->setVisible(m_createFormVisible);
+      m_instanceDescription->setParticipatesInLayout(m_createFormVisible);
     }
     if (m_instanceInput != nullptr) {
       m_instanceInput->setVisible(m_createFormVisible);
@@ -316,9 +324,6 @@ namespace settings {
     m_createType = option.value;
     m_createLabel = option.label;
     m_createFormVisible = true;
-    if (m_createTitle != nullptr) {
-      m_createTitle->setText(i18n::tr("settings.entities.widget.instance.create-title", "type", m_createType));
-    }
     if (m_instanceInput != nullptr) {
       m_instanceInput->setValue(suggestedInstanceId(m_createType));
       m_instanceInput->setInvalid(false);
@@ -337,7 +342,7 @@ namespace settings {
     }
     m_instanceInput->setInvalid(false);
     if (m_onSelect) {
-      m_onSelect(m_lanePath, id, m_createType, id);
+      m_onSelect(m_lanePath, id, m_createType, id, {});
     }
     DeferredCall::callLater([this]() { close(); });
   }
@@ -360,11 +365,15 @@ namespace settings {
     m_headerRow = header.get();
 
     const std::string lane = laneLabel(m_lanePath.empty() ? "" : m_lanePath.back());
-    const std::string title =
-        m_createFormVisible
-            ? i18n::tr("settings.entities.widget.inspector.add-instance-title", "widget", m_createLabel, "lane", lane)
-            : i18n::tr("settings.entities.widget.inspector.add-title", "lane", lane);
-    header->addChild(makeLabel(title, Style::fontSizeBody * m_scale, colorSpecFromRole(ColorRole::OnSurface), true));
+    const std::string title = m_createFormVisible
+                                  ? instanceFormTitle()
+                                  : i18n::tr("settings.entities.widget.inspector.add-title", "lane", lane);
+    auto titleLabel =
+        makeLabel(title, Style::fontSizeBody * m_scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold);
+    if (m_createFormVisible) {
+      titleLabel->setMaxLines(2);
+    }
+    header->addChild(std::move(titleLabel));
 
     auto spacer = std::make_unique<Flex>();
     spacer->setFlexGrow(1.0f);
@@ -373,7 +382,7 @@ namespace settings {
     if (!m_createFormVisible) {
       header->addChild(makeLabel(i18n::tr("settings.entities.widget.picker.instance-toggle"),
                                  Style::fontSizeCaption * m_scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                 false));
+                                 FontWeight::Normal));
 
       auto instanceToggle = std::make_unique<Toggle>();
       instanceToggle->setScale(m_scale);
@@ -417,12 +426,23 @@ namespace settings {
       if (option.value.empty()) {
         return;
       }
+      // Bundled scripted widget (manifest preset): one-click add, no naming form.
+      if (const auto it = m_presetScripts.find(option.value); it != m_presetScripts.end()) {
+        const std::string instanceId = m_config != nullptr && !widgetReferenceNameExists(*m_config, option.value)
+                                           ? option.value
+                                           : suggestedInstanceId(option.value);
+        if (m_onSelect) {
+          m_onSelect(m_lanePath, option.value, "scripted", instanceId, {{"script", it->second}});
+        }
+        DeferredCall::callLater([this]() { close(); });
+        return;
+      }
       if (m_instanceModeEnabled || widgetTypeRequiresNamedConfig(option.value)) {
         beginCreateFlow(option);
         return;
       }
       if (m_onSelect) {
-        m_onSelect(m_lanePath, option.value, {}, {});
+        m_onSelect(m_lanePath, option.value, {}, {}, {});
       }
       DeferredCall::callLater([this]() { close(); });
     });
@@ -430,18 +450,20 @@ namespace settings {
     m_searchPicker = picker.get();
     root->addChild(std::move(picker));
 
-    auto createTitle = makeLabel("", Style::fontSizeCaption * m_scale, colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    createTitle->setVisible(false);
-    createTitle->setParticipatesInLayout(false);
-    m_createTitle = createTitle.get();
-    root->addChild(std::move(createTitle));
+    auto instanceDescription =
+        makeLabel(i18n::tr("settings.entities.widget.instance.id-description"), Style::fontSizeCaption * m_scale,
+                  colorSpecFromRole(ColorRole::OnSurfaceVariant));
+    instanceDescription->setMaxLines(2);
+    instanceDescription->setVisible(false);
+    instanceDescription->setParticipatesInLayout(false);
+    m_instanceDescription = instanceDescription.get();
+    root->addChild(std::move(instanceDescription));
 
     auto instanceInput = std::make_unique<Input>();
     instanceInput->setPlaceholder(i18n::tr("settings.entities.widget.instance.id-placeholder"));
     instanceInput->setFontSize(Style::fontSizeBody * m_scale);
     instanceInput->setControlHeight(Style::controlHeight * m_scale);
     instanceInput->setHorizontalPadding(Style::spaceSm * m_scale);
-    instanceInput->setSize(260.0f * m_scale, Style::controlHeight * m_scale);
     instanceInput->setVisible(false);
     instanceInput->setParticipatesInLayout(false);
     instanceInput->setOnChange([this](const std::string& /*value*/) {
@@ -504,11 +526,43 @@ namespace settings {
     m_root->layout(*renderContext());
   }
 
+  std::string WidgetAddPopup::instanceFormTitle() const {
+    const std::string lane = laneLabel(m_lanePath.empty() ? "" : m_lanePath.back());
+    return i18n::tr("settings.entities.widget.inspector.add-instance-title", "widget", m_createLabel, "lane", lane);
+  }
+
   std::pair<float, float> WidgetAddPopup::popupSize() const {
-    if (m_createFormVisible) {
-      return {360.0f * m_scale, 165.0f * m_scale};
+    constexpr float kPickerWidth = 520.0f;
+    constexpr float kPickerHeight = 420.0f;
+    constexpr float kCreateMinWidth = 360.0f;
+    constexpr float kCreateHeight = 190.0f;
+    constexpr float kCreateMaxWidth = 640.0f;
+    constexpr float kParentMargin = 48.0f;
+
+    if (!m_createFormVisible) {
+      return {kPickerWidth * m_scale, kPickerHeight * m_scale};
     }
-    return {520.0f * m_scale, 420.0f * m_scale};
+
+    float contentWidth = kCreateMinWidth * m_scale;
+    if (m_renderContext != nullptr && !m_createLabel.empty()) {
+      const float fontSize = Style::fontSizeBody * m_scale;
+      const TextMetrics titleMetrics = m_renderContext->measureText(instanceFormTitle(), fontSize, FontWeight::Bold);
+      const float closeBtn = Style::controlHeightSm * m_scale;
+      const float headerGap = Style::spaceSm * m_scale;
+      const float rootPadding = Style::spaceSm * m_scale * 2.0f;
+      const float sheetPadding = computePadding(m_scale) * 2.0f;
+
+      const float measured = titleMetrics.width + headerGap + closeBtn + rootPadding + sheetPadding;
+
+      float maxWidth = kCreateMaxWidth * m_scale;
+      if (m_parentWidth > 0) {
+        maxWidth = std::min(maxWidth, std::max(kCreateMinWidth * m_scale,
+                                               static_cast<float>(m_parentWidth) * m_scale - kParentMargin * m_scale));
+      }
+      contentWidth = std::clamp(measured, kCreateMinWidth * m_scale, maxWidth);
+    }
+
+    return {contentWidth, kCreateHeight * m_scale};
   }
 
   void WidgetAddPopup::reopenForCurrentMode() {
@@ -544,6 +598,7 @@ namespace settings {
     }
     m_normalOptions.clear();
     m_instanceOptions.clear();
+    m_presetScripts.clear();
     m_config = nullptr;
     m_parentXdgSurface = nullptr;
     m_parentWlSurface = nullptr;
@@ -556,7 +611,7 @@ namespace settings {
     m_headerRow = nullptr;
     m_createActions = nullptr;
     m_searchPicker = nullptr;
-    m_createTitle = nullptr;
+    m_instanceDescription = nullptr;
     m_instanceInput = nullptr;
     m_instanceModeEnabled = false;
     m_createFormVisible = false;

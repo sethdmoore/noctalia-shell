@@ -43,12 +43,42 @@ namespace {
 
   constexpr float kBodyMaxWidth = 1280.0f;
 
-  std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color, bool bold = false) {
+  bool useLightPalettePreview(ThemeMode mode) { return mode == ThemeMode::Light; }
+
+  ColorSwatchPreview palettePreviewFromMetadata(const noctalia::theme::AvailablePalette::PreviewMode& metadata) {
+    ColorSwatchPreview preview;
+    Color surface;
+    if (tryParseHexColor(metadata.surface, surface)) {
+      preview.surface = fixedColorSpec(surface);
+    }
+    preview.swatches.reserve(metadata.accents.size());
+    for (const auto& hexColor : metadata.accents) {
+      Color color;
+      if (tryParseHexColor(hexColor, color)) {
+        preview.swatches.push_back(fixedColorSpec(color));
+      }
+    }
+    return preview;
+  }
+
+  ColorSwatchPreview availablePalettePreview(const noctalia::theme::AvailablePalette& palette, ThemeMode mode) {
+    if (useLightPalettePreview(mode)) {
+      ColorSwatchPreview preview = palettePreviewFromMetadata(palette.preview.light);
+      if (!preview.empty()) {
+        return preview;
+      }
+      return palettePreviewFromMetadata(palette.preview.dark);
+    }
+    return palettePreviewFromMetadata(palette.preview.dark);
+  }
+
+  std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color,
+                                   FontWeight fontWeight = FontWeight::Normal) {
     auto label = std::make_unique<Label>();
     label->setText(text);
     label->setFontSize(fontSize);
     label->setColor(color);
-    label->setBold(bold);
+    label->setFontWeight(fontWeight);
     return label;
   }
 
@@ -271,11 +301,22 @@ settings::RegistryEnvironment SettingsWindow::buildRegistryEnvironment() const {
   env.niriOverviewTypeToLaunchSupported = (m_wayland != nullptr && compositors::isNiri());
   env.ddcutilAvailable = (m_dependencies != nullptr && m_dependencies->hasDdcutil());
   env.gammaControlAvailable = (m_wayland != nullptr && m_wayland->hasGammaControl());
+  const ThemeMode previewMode = m_config != nullptr ? m_config->config().theme.mode : ThemeMode::Dark;
   for (const auto& paletteInfo : noctalia::theme::availableCommunityPalettes()) {
-    env.communityPalettes.push_back(settings::SelectOption{paletteInfo.name, paletteInfo.name});
+    env.communityPalettes.push_back(settings::SelectOption{
+        .value = paletteInfo.name,
+        .label = paletteInfo.name,
+        .description = {},
+        .preview = availablePalettePreview(paletteInfo, previewMode),
+    });
   }
   for (const auto& p : noctalia::theme::availableCustomPalettes()) {
-    env.customPalettes.push_back(settings::SelectOption{p.name, p.name});
+    env.customPalettes.push_back(settings::SelectOption{
+        .value = p.name,
+        .label = p.name,
+        .description = {},
+        .preview = availablePalettePreview(p, previewMode),
+    });
   }
   for (const auto& t : noctalia::theme::CommunityTemplateService::availableTemplates()) {
     env.communityTemplates.push_back(settings::SelectOption{t.id, t.displayName});
@@ -446,7 +487,7 @@ std::unique_ptr<Flex> SettingsWindow::buildHeaderRow(float scale) {
 
   auto headerTitle = std::make_unique<Label>();
   headerTitle->setText(i18n::tr("settings.window.title"));
-  headerTitle->setBold(true);
+  headerTitle->setFontWeight(FontWeight::Bold);
   headerTitle->setFontSize(Style::fontSizeTitle * scale);
   headerTitle->setColor(colorSpecFromRole(ColorRole::OnSurface));
   headerTitle->setFlexGrow(1.0f);
@@ -518,7 +559,7 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(float scale, const std::str
   filters->addChild(std::make_unique<Spacer>());
 
   auto advancedLabel = makeLabel(i18n::tr("settings.badges.advanced"), Style::fontSizeBody * scale,
-                                 colorSpecFromRole(ColorRole::OnSurfaceVariant), false);
+                                 colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal);
   filters->addChild(std::move(advancedLabel));
 
   auto advancedToggle = std::make_unique<Toggle>();
@@ -541,7 +582,7 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(float scale, const std::str
   filters->addChild(std::move(advancedToggle));
 
   auto overriddenLabel = makeLabel(i18n::tr("settings.window.filter-modified"), Style::fontSizeBody * scale,
-                                   colorSpecFromRole(ColorRole::OnSurfaceVariant), false);
+                                   colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal);
   filters->addChild(std::move(overriddenLabel));
 
   auto overriddenToggle = std::make_unique<Toggle>();
@@ -607,8 +648,9 @@ std::unique_ptr<Flex> SettingsWindow::buildStatusRow(float scale) {
   status->setBorder(colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary, 0.45f),
                     Style::borderWidth);
 
-  auto message = makeLabel(m_statusMessage, Style::fontSizeCaption * scale,
-                           colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary), true);
+  auto message =
+      makeLabel(m_statusMessage, Style::fontSizeCaption * scale,
+                colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary), FontWeight::Bold);
   message->setFlexGrow(1.0f);
   status->addChild(std::move(message));
 
@@ -708,13 +750,8 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   syncSelectedBarState(cfg, availableBars);
 
   const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
-  const BarMonitorOverride* selectedMonitorOverride = nullptr;
-  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty()) {
-    selectedMonitorOverride = settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride);
-  }
 
-  m_settingsRegistry =
-      settings::buildSettingsRegistry(cfg, selectedBar, selectedMonitorOverride, buildRegistryEnvironment());
+  m_settingsRegistry = settings::buildSettingsRegistry(cfg, nullptr, nullptr, buildRegistryEnvironment());
 
   if (m_openWallpaperPanel) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {

@@ -534,12 +534,24 @@ std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const 
     return std::make_unique<PowerProfileShortcut>(s.powerProfiles);
   if (type == "media")
     return std::make_unique<MediaShortcut>(s.mpris);
-  if (type == "weather")
+  if (type == "weather") {
+    if (s.config != nullptr && !s.config->config().weather.enabled) {
+      return nullptr;
+    }
     return std::make_unique<WeatherShortcut>(s.weather);
-  if (type == "sysmon")
+  }
+  if (type == "sysmon") {
+    if (s.config != nullptr && !s.config->config().system.monitor.enabled) {
+      return nullptr;
+    }
     return std::make_unique<SysmonShortcut>();
-  if (type == "screen_time")
+  }
+  if (type == "screen_time") {
+    if (s.config != nullptr && !s.config->config().shell.screenTimeEnabled) {
+      return nullptr;
+    }
     return std::make_unique<ScreenTimeShortcut>();
+  }
   if (type == "keyboard_layout")
     return std::make_unique<KeyboardLayoutShortcut>(s.platform, s.config);
   if (type == "wallpaper")

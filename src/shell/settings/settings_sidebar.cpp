@@ -58,7 +58,7 @@ namespace settings {
       button.setGap(Style::spaceSm * scale);
       button.setRadius(Style::scaledRadiusLg(scale));
       if (button.label() != nullptr) {
-        button.label()->setBold(true);
+        button.label()->setFontWeight(FontWeight::Bold);
       }
     }
 
@@ -303,7 +303,7 @@ namespace settings {
     newBarBtn->setGap(Style::spaceSm * scale);
     newBarBtn->setRadius(Style::scaledRadiusLg(scale));
     if (newBarBtn->label() != nullptr) {
-      newBarBtn->label()->setBold(true);
+      newBarBtn->label()->setFontWeight(FontWeight::Bold);
     }
     newBarBtn->setOnClick([creatingBarName, nextBarName, clearTransientState, requestRebuild]() {
       clearTransientState();

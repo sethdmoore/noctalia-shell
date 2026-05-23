@@ -67,6 +67,7 @@ public:
     return {};
   }
   [[nodiscard]] virtual std::vector<WorkspaceWindow> workspaceWindows(wl_output* /*output*/) const { return {}; }
+  virtual void focusWindow(const std::string& /*windowId*/) {}
   virtual void cleanup() = 0;
 
   [[nodiscard]] virtual int pollFd() const noexcept { return -1; }

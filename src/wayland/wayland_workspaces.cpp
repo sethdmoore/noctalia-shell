@@ -122,6 +122,9 @@ void WaylandWorkspaces::onOutputAdded(wl_output* output) {
       backend->onOutputAdded(output);
     }
   }
+  if (m_activeBackend == m_hyprlandBackend && m_hyprlandBackend != nullptr) {
+    static_cast<HyprlandWorkspaceBackend*>(m_hyprlandBackend)->syncFromCompositor();
+  }
 }
 
 void WaylandWorkspaces::onOutputRemoved(wl_output* output) {
@@ -207,6 +210,19 @@ WaylandWorkspaces::assignTaskbarWindows(const std::vector<TaskbarWindowCandidate
 
 std::vector<WorkspaceWindow> WaylandWorkspaces::workspaceWindows(wl_output* output) const {
   return m_activeBackend != nullptr ? m_activeBackend->workspaceWindows(output) : std::vector<WorkspaceWindow>{};
+}
+
+void WaylandWorkspaces::focusWindow(const std::string& windowId) const {
+  if (m_activeBackend != nullptr) {
+    m_activeBackend->focusWindow(windowId);
+  }
+}
+
+std::optional<std::string> WaylandWorkspaces::focusedWindowId() const {
+  if (m_hyprlandBackend == nullptr) {
+    return std::nullopt;
+  }
+  return static_cast<const HyprlandWorkspaceBackend*>(m_hyprlandBackend)->focusedWindowId();
 }
 
 std::vector<Workspace> WaylandWorkspaces::all() const {

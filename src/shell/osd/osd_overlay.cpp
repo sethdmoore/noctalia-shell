@@ -33,7 +33,9 @@ namespace {
     if (config == nullptr) {
       return 1.0f;
     }
-    return std::max(0.1f, config->config().shell.uiScale);
+    const auto& shell = config->config().shell;
+    const auto& osd = config->config().osd;
+    return std::max(0.1f, shell.uiScale * osd.scale);
   }
 
   [[nodiscard]] bool isVerticalOrientation(const std::string& orientation) { return orientation == "vertical"; }
@@ -425,7 +427,7 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
   inst.row->addChild(std::move(glyph));
 
   auto value = std::make_unique<Label>();
-  value->setBold(true);
+  value->setFontWeight(FontWeight::Bold);
   value->setFontSize(valueFontSize(s));
   value->setColor(colorSpecFromRole(ColorRole::OnSurface));
   value->setTextAlign(vertical ? TextAlign::Center : TextAlign::End);

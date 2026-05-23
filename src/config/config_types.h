@@ -59,7 +59,7 @@ struct BarConfig {
   std::string position = "top";
   bool enabled = true;
   bool autoHide = false;    // slide out when the pointer leaves; reveal on edge approach
-  bool reserveSpace = true; // reserve compositor exclusive zone for this bar
+  bool reserveSpace = true; // reserve compositor exclusive zone when auto_hide is false
   std::int32_t thickness = Style::barThicknessDefault;
   float backgroundOpacity = 1.0f;
   // Inside outline for the bar background; attached panels inherit the resolved values.
@@ -77,6 +77,7 @@ struct BarConfig {
   bool shadow = true;             // use the global shell shadow
   bool contactShadow = false;     // dark gradient between attached panel and bar
   float scale = 1.0f;             // content scale multiplier for glyphs and text
+  int fontWeight = 500;           // primary label weight for bar widgets
   std::vector<std::string> startWidgets = {"launcher", "wallpaper", "workspaces"};
   std::vector<std::string> centerWidgets = {"clock"};
   std::vector<std::string> endWidgets = {"media",   "tray",           "notifications", "clipboard",
@@ -128,6 +129,7 @@ struct SessionPanelActionConfig {
   std::optional<std::string> label;
   std::optional<std::string> glyph;
   SessionActionButtonVariant variant = SessionActionButtonVariant::Default;
+  std::optional<KeyChord> shortcut;
 
   bool operator==(const SessionPanelActionConfig&) const = default;
 };
@@ -347,6 +349,7 @@ struct DockConfig {
   std::string launcherPosition = "none";  // none | start | end
   std::string launcherIcon = "grid-dots"; // Tabler glyph name
   std::vector<std::string> pinned;        // desktop entry IDs to always show
+  std::vector<std::string> monitors;      // connector names to show on; empty = all outputs
 
   bool operator==(const DockConfig&) const = default;
 };
@@ -385,7 +388,9 @@ struct DesktopWidgetsConfig {
 struct OsdConfig {
   std::string position = "top_right";
   std::string orientation = "horizontal";
+  float scale = 1.0f;
   bool lockKeys = true;
+  bool keyboardLayout = true;
 };
 
 struct NotificationConfig {
@@ -526,6 +531,8 @@ struct ShellConfig {
   struct PanelConfig {
     bool backgroundBlur = true; // request compositor blur behind panels via ext-background-effect-v1
     PanelTransparencyMode transparencyMode = PanelTransparencyMode::Solid;
+    bool borders = true; // panel shell outline and in-panel section cards
+    bool shadow = true;  // cast the global [shell.shadow] from panel surfaces
     PanelPlacement launcherPlacement = PanelPlacement::Centered;
     PanelPlacement clipboardPlacement = PanelPlacement::Centered;
     PanelPlacement controlCenterPlacement = PanelPlacement::Attached;
@@ -596,6 +603,9 @@ struct WeatherConfig {
 
 struct SystemConfig {
   struct MonitorConfig {
+    static constexpr float kMinPollSeconds = 1.0f;
+    static constexpr float kMaxPollSeconds = 120.0f;
+
     bool enabled = true;
     float cpuPollSeconds = 2.0f;
     float gpuPollSeconds = 5.0f;

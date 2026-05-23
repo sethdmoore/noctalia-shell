@@ -4,6 +4,7 @@
 
 #include <cstdint>
 
+struct Config;
 class Glyph;
 class Label;
 class PipeWireService;
@@ -16,7 +17,8 @@ enum class VolumeWidgetTarget {
 
 class VolumeWidget : public Widget {
 public:
-  VolumeWidget(PipeWireService* audio, wl_output* output, bool showLabel, VolumeWidgetTarget target);
+  VolumeWidget(PipeWireService* audio, const Config* config, wl_output* output, bool showLabel,
+               VolumeWidgetTarget target);
 
   void create() override;
 
@@ -26,6 +28,7 @@ private:
   void syncState(Renderer& renderer);
 
   PipeWireService* m_audio = nullptr;
+  const Config* m_config = nullptr;
   wl_output* m_output = nullptr;
   bool m_showLabel = true;
   VolumeWidgetTarget m_target = VolumeWidgetTarget::Output;

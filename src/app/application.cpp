@@ -510,8 +510,13 @@ void Application::initServices() {
     }
   });
   m_compositorPlatform.setWorkspaceChangeCallback([this]() { m_bar.refresh(); });
-  m_compositorPlatform.setKeyboardLayoutChangeCallback([this]() { m_bar.refresh(); });
-  m_wayland.setToplevelChangeCallback([this]() {
+  m_compositorPlatform.setKeyboardLayoutChangeCallback([this]() {
+    m_bar.refresh();
+    if (m_configService.config().osd.keyboardLayout) {
+      m_keyboardLayoutOsd.onLayoutChanged(m_compositorPlatform);
+    }
+  });
+  m_compositorPlatform.setToplevelChangeCallback([this]() {
     m_screenTimeService.onFocusChange();
     m_bar.refresh();
     m_dock.refresh();
@@ -1121,6 +1126,7 @@ void Application::initUi() {
 
   TooltipManager::instance().initialize(m_wayland, &m_renderContext);
   m_osdOverlay.initialize(m_wayland, &m_configService, &m_renderContext);
+  m_configService.addReloadCallback([this]() { m_osdOverlay.requestLayout(); });
   m_idleGraceOverlay.initialize(m_wayland, &m_renderContext);
   m_wayland.setIdleCapabilitiesReadyCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
   m_idleManager.initialize(
@@ -1154,6 +1160,8 @@ void Application::initUi() {
     m_lockKeysOsd.bindOverlay(m_osdOverlay);
     m_lockKeysOsd.primeFromService(m_lockKeysService);
   }
+  m_keyboardLayoutOsd.bindOverlay(m_osdOverlay);
+  m_keyboardLayoutOsd.prime(m_compositorPlatform);
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 
@@ -1253,6 +1261,9 @@ void Application::initUi() {
       m_bar.onSecondTick();
       m_desktopWidgetsController.onSecondTick();
       m_settingsWindow.onSecondTick();
+      if (m_configService.config().osd.keyboardLayout) {
+        m_keyboardLayoutOsd.onLayoutChanged(m_compositorPlatform);
+      }
     }
     m_idleManager.onSecondTick();
   });

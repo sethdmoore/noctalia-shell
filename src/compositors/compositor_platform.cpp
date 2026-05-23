@@ -5,6 +5,8 @@
 #include "compositors/ext_workspace/ext_workspace_output_backend.h"
 #include "compositors/hyprland/hyprland_keyboard_backend.h"
 #include "compositors/hyprland/hyprland_output_backend.h"
+#include "compositors/hyprland/hyprland_toplevel_mapping.h"
+#include "compositors/hyprland/hyprland_window_id.h"
 #include "compositors/mango/mango_keyboard_backend.h"
 #include "compositors/mango/mango_output_backend.h"
 #include "compositors/niri/niri_keyboard_backend.h"
@@ -20,6 +22,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace compositors {
@@ -40,6 +43,48 @@ namespace compositors {
 } // namespace compositors
 
 namespace {
+
+  void appendHyprlandExtOnlyWindows(std::vector<ToplevelInfo>& windows, const std::vector<ToplevelInfo>& extWindows,
+                                    const compositors::hyprland::HyprlandToplevelMapping& mapping,
+                                    const std::unordered_set<std::string>* outputWindowIds) {
+    std::unordered_set<std::string> wlrRepresentedIds;
+    wlrRepresentedIds.reserve(windows.size());
+    for (const auto& window : windows) {
+      if (window.handle == nullptr) {
+        continue;
+      }
+      const auto windowId = mapping.windowIdForWlrHandle(window.handle);
+      if (!windowId.has_value()) {
+        continue;
+      }
+      const auto normalized = compositors::hyprland::normalizeWindowId(*windowId);
+      if (!normalized.empty()) {
+        wlrRepresentedIds.insert(normalized);
+      }
+    }
+
+    for (const auto& extWindow : extWindows) {
+      if (extWindow.extHandle == nullptr) {
+        continue;
+      }
+      const auto windowId = mapping.windowIdForExtHandle(extWindow.extHandle);
+      if (windowId.has_value()) {
+        const auto normalized = compositors::hyprland::normalizeWindowId(*windowId);
+        // Pre-shell windows are often ext-only: mapping may know a wlr handle Hyprland never
+        // exports via zwlr_foreign_toplevel_management, so dedupe only against live wlr results.
+        if (!normalized.empty() && wlrRepresentedIds.contains(normalized)) {
+          continue;
+        }
+        // ext_foreign_toplevel_list has no per-output metadata; scope to this bar's monitor via IPC.
+        if (outputWindowIds != nullptr && (normalized.empty() || !outputWindowIds->contains(normalized))) {
+          continue;
+        }
+      } else if (outputWindowIds != nullptr) {
+        continue;
+      }
+      windows.push_back(extWindow);
+    }
+  }
 
   template <typename BackendT> class FocusedOutputAdapter final : public compositors::FocusedOutputBackend {
   public:
@@ -221,6 +266,9 @@ CompositorPlatform::CompositorPlatform(WaylandConnection& wayland)
 
   m_wayland.setWorkspaceManagerCallbacks([this](ext_workspace_manager_v1* manager) { bindExtWorkspace(manager); },
                                          [this](zdwl_ipc_manager_v2* manager) { bindDwlIpcWorkspace(manager); });
+  m_wayland.setHyprlandToplevelMappingManagerCallback(
+      [this](hyprland_toplevel_mapping_manager_v1* manager) { bindHyprlandToplevelMappingManager(manager); });
+  m_wayland.setToplevelChangeCallback([this]() { notifyToplevelsChanged(); });
   m_wayland.setOutputLifecycleCallbacks([this](wl_output* output) { onOutputAdded(output); },
                                         [this](wl_output* output) { onOutputRemoved(output); });
 }
@@ -229,6 +277,8 @@ CompositorPlatform::~CompositorPlatform() {
   cleanup();
   m_wayland.setOutputLifecycleCallbacks({}, {});
   m_wayland.setWorkspaceManagerCallbacks({}, {});
+  m_wayland.setHyprlandToplevelMappingManagerCallback({});
+  m_wayland.setToplevelChangeCallback({});
 }
 
 void CompositorPlatform::initialize() {
@@ -246,6 +296,10 @@ void CompositorPlatform::initialize() {
 }
 
 void CompositorPlatform::cleanup() {
+  if (m_hyprlandToplevelMapping != nullptr) {
+    m_hyprlandToplevelMapping->cleanup();
+    m_hyprlandToplevelMapping.reset();
+  }
   if (m_workspaceMetadataBackend != nullptr) {
     m_workspaceMetadataBackend->cleanup();
   }
@@ -368,7 +422,25 @@ std::vector<std::string> CompositorPlatform::runningAppIds(wl_output* outputFilt
 
 std::vector<ToplevelInfo> CompositorPlatform::windowsForApp(const std::string& idLower, const std::string& wmClassLower,
                                                             wl_output* outputFilter) const {
-  return m_wayland.windowsForApp(idLower, wmClassLower, outputFilter);
+  auto windows = m_wayland.windowsForApp(idLower, wmClassLower, outputFilter);
+  if (!compositors::isHyprland() || m_hyprlandToplevelMapping == nullptr || !m_hyprlandToplevelMapping->available() ||
+      !m_wayland.hasExtForeignToplevelList()) {
+    return windows;
+  }
+
+  std::unordered_set<std::string> outputWindowIds;
+  if (outputFilter != nullptr && m_workspaces != nullptr) {
+    for (const auto& row : m_workspaces->workspaceWindows(outputFilter)) {
+      const auto normalized = compositors::hyprland::normalizeWindowId(row.windowId);
+      if (!normalized.empty()) {
+        outputWindowIds.insert(normalized);
+      }
+    }
+  }
+
+  appendHyprlandExtOnlyWindows(windows, m_wayland.extWindowsForApp(idLower, wmClassLower), *m_hyprlandToplevelMapping,
+                               outputFilter != nullptr ? &outputWindowIds : nullptr);
+  return windows;
 }
 
 void CompositorPlatform::activateToplevel(zwlr_foreign_toplevel_handle_v1* handle) {
@@ -376,6 +448,116 @@ void CompositorPlatform::activateToplevel(zwlr_foreign_toplevel_handle_v1* handl
 }
 
 void CompositorPlatform::closeToplevel(zwlr_foreign_toplevel_handle_v1* handle) { m_wayland.closeToplevel(handle); }
+
+void CompositorPlatform::setToplevelChangeCallback(ChangeCallback callback) {
+  m_toplevelChangeCallback = std::move(callback);
+}
+
+void CompositorPlatform::bindHyprlandToplevelMappingManager(hyprland_toplevel_mapping_manager_v1* manager) {
+  if (manager == nullptr) {
+    if (m_hyprlandToplevelMapping != nullptr) {
+      m_hyprlandToplevelMapping->cleanup();
+      m_hyprlandToplevelMapping.reset();
+    }
+    return;
+  }
+  if (m_hyprlandToplevelMapping == nullptr) {
+    m_hyprlandToplevelMapping = std::make_unique<compositors::hyprland::HyprlandToplevelMapping>();
+    m_hyprlandToplevelMapping->setChangeCallback([this]() { notifyToplevelsChanged(); });
+  }
+  m_hyprlandToplevelMapping->initialize(manager);
+  syncHyprlandToplevelMappings();
+}
+
+void CompositorPlatform::syncHyprlandToplevelMappings() {
+  if (m_hyprlandToplevelMapping == nullptr || !m_hyprlandToplevelMapping->available()) {
+    return;
+  }
+  std::vector<zwlr_foreign_toplevel_handle_v1*> wlrHandles;
+  m_wayland.visitWlrToplevelHandles([&](zwlr_foreign_toplevel_handle_v1* handle) { wlrHandles.push_back(handle); });
+  m_hyprlandToplevelMapping->syncWlrHandles(wlrHandles);
+
+  if (compositors::isHyprland() && m_wayland.hasExtForeignToplevelList()) {
+    std::vector<ext_foreign_toplevel_handle_v1*> extHandles;
+    m_wayland.visitExtToplevelHandles([&](ext_foreign_toplevel_handle_v1* handle) { extHandles.push_back(handle); });
+    m_hyprlandToplevelMapping->syncExtHandles(extHandles);
+  }
+}
+
+void CompositorPlatform::notifyToplevelsChanged() {
+  syncHyprlandToplevelMappings();
+  if (m_toplevelChangeCallback) {
+    m_toplevelChangeCallback();
+  }
+}
+
+std::optional<std::string>
+CompositorPlatform::compositorWindowIdForToplevel(zwlr_foreign_toplevel_handle_v1* handle) const {
+  if (m_hyprlandToplevelMapping == nullptr) {
+    return std::nullopt;
+  }
+  return m_hyprlandToplevelMapping->windowIdForWlrHandle(handle);
+}
+
+std::optional<std::string>
+CompositorPlatform::compositorWindowIdForExtToplevel(ext_foreign_toplevel_handle_v1* handle) const {
+  if (m_hyprlandToplevelMapping == nullptr) {
+    return std::nullopt;
+  }
+  return m_hyprlandToplevelMapping->windowIdForExtHandle(handle);
+}
+
+zwlr_foreign_toplevel_handle_v1*
+CompositorPlatform::toplevelHandleForCompositorWindowId(const std::string_view windowId) const {
+  if (m_hyprlandToplevelMapping == nullptr) {
+    return nullptr;
+  }
+  return m_hyprlandToplevelMapping->wlrHandleForWindowId(windowId);
+}
+
+bool CompositorPlatform::isCompositorWindowIdKnown(const std::string_view windowId) const {
+  if (m_hyprlandToplevelMapping == nullptr || !m_hyprlandToplevelMapping->available()) {
+    return false;
+  }
+
+  const auto normalized = compositors::hyprland::normalizeWindowId(windowId);
+  if (normalized.empty()) {
+    return false;
+  }
+
+  if (const auto* wlrHandle = m_hyprlandToplevelMapping->wlrHandleForWindowId(normalized)) {
+    bool live = false;
+    m_wayland.visitWlrToplevelHandles([&](zwlr_foreign_toplevel_handle_v1* handle) {
+      if (handle == wlrHandle) {
+        live = true;
+      }
+    });
+    if (live) {
+      return true;
+    }
+  }
+
+  if (const auto* extHandle = m_hyprlandToplevelMapping->extHandleForWindowId(normalized)) {
+    bool live = false;
+    m_wayland.visitExtToplevelHandles([&](ext_foreign_toplevel_handle_v1* handle) {
+      if (handle == extHandle) {
+        live = true;
+      }
+    });
+    if (live) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+std::optional<std::string> CompositorPlatform::focusedCompositorWindowId() const {
+  if (m_workspaces == nullptr) {
+    return std::nullopt;
+  }
+  return m_workspaces->focusedWindowId();
+}
 
 void CompositorPlatform::setWorkspaceChangeCallback(ChangeCallback callback) {
   m_workspaceChangeCallback = std::move(callback);
@@ -537,6 +719,12 @@ CompositorPlatform::assignTaskbarWindows(const std::vector<TaskbarWindowCandidat
 
 const char* CompositorPlatform::workspaceBackendName() const noexcept {
   return m_workspaces != nullptr ? m_workspaces->backendName() : "none";
+}
+
+void CompositorPlatform::focusCompositorWindow(const std::string& windowId) const {
+  if (m_workspaces != nullptr) {
+    m_workspaces->focusWindow(windowId);
+  }
 }
 
 bool CompositorPlatform::cycleKeyboardLayout() const {

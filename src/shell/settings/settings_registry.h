@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config/config_service.h"
+#include "ui/controls/color_swatch_preview.h"
 #include "ui/palette.h"
 
 #include <cstddef>
@@ -23,13 +24,16 @@ namespace settings {
     std::string value;
     std::string label;
     std::string description = {};
+    ColorSwatchPreview preview = {};
   };
 
   struct SelectSetting {
     std::vector<SelectOption> options;
     std::string selectedValue;
     bool clearOnEmpty = false;
-    bool segmented = false; // render as Segmented pill group instead of dropdown Select
+    bool segmented = false;      // render as Segmented pill group instead of dropdown Select
+    bool integerValue = false;   // option values are numeric strings; write as int64_t to config
+    float preferredWidth = 0.0f; // 0 = default settings dropdown width
   };
 
   struct SearchPickerSetting {
@@ -199,6 +203,10 @@ namespace settings {
   [[nodiscard]] std::string normalizedSettingQuery(std::string_view query);
   [[nodiscard]] bool matchesNormalizedSettingQuery(const SettingEntry& entry, std::string_view normalizedQuery);
   [[nodiscard]] bool matchesSettingQuery(const SettingEntry& entry, std::string_view query);
+  [[nodiscard]] bool isBarMonitorOverrideSettingPath(const std::vector<std::string>& path);
+  [[nodiscard]] bool settingEntryMatchesBarNavigation(const SettingEntry& entry, std::string_view selectedBarName,
+                                                      std::string_view selectedMonitorOverride);
+  [[nodiscard]] std::string barSettingContentSectionKey(const SettingEntry& entry);
   [[nodiscard]] std::string_view sectionGlyph(std::string_view section);
 
 } // namespace settings

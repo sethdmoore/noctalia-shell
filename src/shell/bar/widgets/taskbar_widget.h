@@ -3,6 +3,7 @@
 #include "compositors/compositor_platform.h"
 #include "shell/bar/widget.h"
 #include "system/icon_resolver.h"
+#include "ui/palette.h"
 
 #include <cstdint>
 #include <limits>
@@ -28,7 +29,8 @@ class TaskbarWidget : public Widget {
 public:
   TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
                 bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-                bool hideEmptyWorkspaces, std::string barPosition, ShellConfig::ShadowConfig shadowConfig);
+                bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
+                ColorSpec emptyColor, std::string barPosition, ShellConfig::ShadowConfig shadowConfig);
   ~TaskbarWidget() override;
 
   void create() override;
@@ -84,6 +86,11 @@ private:
   [[nodiscard]] bool useMultiOutputWorkspaceKeys() const noexcept;
   [[nodiscard]] std::string workspaceKeyPrefixForOutput(wl_output* out) const;
   [[nodiscard]] wl_output* workspaceHostOutput(const WorkspaceModel& model) const noexcept;
+  [[nodiscard]] ColorSpec workspaceFillColor(const Workspace& workspace) const;
+  [[nodiscard]] ColorSpec workspaceTextColor(const Workspace& workspace) const;
+  [[nodiscard]] static ColorSpec readableColorForFill(const ColorSpec& fill);
+  [[nodiscard]] static ColorRole onRoleForFill(ColorRole fill);
+  [[nodiscard]] static bool taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws);
 
   CompositorPlatform& m_platform;
   wl_output* m_output = nullptr;
@@ -93,6 +100,10 @@ private:
   bool m_showWorkspaceLabel = true;
   WorkspaceLabelPlacement m_workspaceLabelPlacement = WorkspaceLabelPlacement::Corner;
   bool m_hideEmptyWorkspaces = false;
+  bool m_workspaceGroupCapsule = true;
+  ColorSpec m_focusedColor = colorSpecFromRole(ColorRole::Primary);
+  ColorSpec m_occupiedColor = colorSpecFromRole(ColorRole::Secondary);
+  ColorSpec m_emptyColor = colorSpecFromRole(ColorRole::Secondary);
   std::string m_barPosition;
   ShellConfig::ShadowConfig m_shadowConfig;
   bool m_rebuildPending = true;

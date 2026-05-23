@@ -351,7 +351,7 @@ void DialogPopupHost::buildScene(std::uint32_t width, std::uint32_t height) {
   m_panelShadow = popup_chrome::addShadow(*m_sceneRoot, m_chrome, popupShadowConfig(m_config), Style::scaledRadiusXl());
 
   auto bg = std::make_unique<Box>();
-  bg->setPanelStyle();
+  bg->setPanelStyle(m_config != nullptr && m_config->config().shell.panel.borders);
   m_bgNode = static_cast<Box*>(m_sceneRoot->addChild(std::move(bg)));
 
   auto content = std::make_unique<Node>();

@@ -456,7 +456,7 @@ ColorPickerSheet::ColorPickerSheet(float chromeScale) : m_chromeScale(std::max(0
 
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("ui.dialogs.color-picker.title"));
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeTitle * m_chromeScale);
   title->setColor(colorSpecFromRole(ColorRole::Primary));
   m_title = static_cast<Label*>(header->addChild(std::move(title)));

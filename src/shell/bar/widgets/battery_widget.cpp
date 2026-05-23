@@ -1,5 +1,6 @@
 #include "shell/bar/widgets/battery_widget.h"
 
+#include "dbus/upower/upower_service.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "ui/controls/box.h"
@@ -33,7 +34,7 @@ namespace {
     if (state == BatteryState::FullyCharged || state == BatteryState::PendingCharge) {
       return "battery-plugged";
     }
-    if (state == BatteryState::Unknown) {
+    if (state == BatteryState::Unknown && percentage <= 0.0) {
       return "battery-exclamation";
     }
     if (percentage >= 85.0) {
@@ -64,9 +65,11 @@ namespace {
 } // namespace
 
 BatteryWidget::BatteryWidget(UPowerService* upower, std::string deviceSelector, int warningThreshold,
-                             ColorSpec warningColor, BatteryDisplayMode displayMode, bool showLabel)
+                             ColorSpec warningColor, BatteryDisplayMode displayMode, bool showLabel,
+                             bool hideWhenPlugged, bool hideWhenFull)
     : m_upower(upower), m_deviceSelector(std::move(deviceSelector)), m_warningThreshold(warningThreshold),
-      m_warningColor(std::move(warningColor)), m_displayMode(displayMode), m_showLabel(showLabel) {}
+      m_warningColor(std::move(warningColor)), m_displayMode(displayMode), m_showLabel(showLabel),
+      m_hideWhenPlugged(hideWhenPlugged), m_hideWhenFull(hideWhenFull) {}
 
 void BatteryWidget::create() {
   auto container = std::make_unique<InputArea>();
@@ -98,7 +101,7 @@ void BatteryWidget::createGraphicMode() {
 
   if (m_showLabel) {
     auto overlayLabel = std::make_unique<Label>();
-    overlayLabel->setBold(true);
+    overlayLabel->setFontWeight(labelFontWeight());
     overlayLabel->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
     m_overlayLabel = overlayLabel.get();
     container->addChild(std::move(overlayLabel));
@@ -122,7 +125,7 @@ void BatteryWidget::createIconMode() {
   container->addChild(std::move(glyph));
 
   auto label = std::make_unique<Label>();
-  label->setBold(true);
+  label->setFontWeight(labelFontWeight());
   label->setFontSize(Style::fontSizeBody * m_contentScale);
   label->setVisible(m_showLabel);
   m_label = label.get();
@@ -316,23 +319,24 @@ void BatteryWidget::syncState(Renderer& renderer) {
   m_lastPresent = s.isPresent;
   m_lastVertical = m_isVertical;
 
+  const bool isPluggedIn = s.state == BatteryState::Charging || s.state == BatteryState::FullyCharged ||
+                           s.state == BatteryState::PendingCharge;
+
+  const bool showWidget =
+      s.isPresent && !(m_hideWhenPlugged && isPluggedIn) && !(m_hideWhenFull && s.state == BatteryState::FullyCharged);
+
   auto* rootNode = root();
-  if (!s.isPresent) {
-    if (rootNode != nullptr) {
-      rootNode->setVisible(false);
-      rootNode->setSize(0.0f, 0.0f);
-    }
+  if (rootNode != nullptr) {
+    rootNode->setVisible(showWidget);
+    rootNode->setParticipatesInLayout(showWidget);
+  }
+
+  if (!showWidget) {
     return;
   }
 
-  if (rootNode != nullptr) {
-    rootNode->setVisible(true);
-  }
-
   const int pct = static_cast<int>(std::round(s.percentage));
-  const bool isCharging = s.state == BatteryState::Charging || s.state == BatteryState::FullyCharged ||
-                          s.state == BatteryState::PendingCharge;
-  const bool isWarning = m_warningThreshold > 0 && pct <= m_warningThreshold && !isCharging;
+  const bool isWarning = m_warningThreshold > 0 && pct <= m_warningThreshold && !isPluggedIn;
   const ColorSpec normalFgColor = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
   const ColorSpec fgColor = isWarning ? m_warningColor : normalFgColor;
 
@@ -408,9 +412,20 @@ void BatteryWidget::syncState(Renderer& renderer) {
 
   // Tooltip (both modes)
   if (rootNode != nullptr) {
+    auto devices = m_upower->batteryDevices();
+    auto laptopEnd = std::stable_partition(devices.begin(), devices.end(),
+                                           [](const UPowerDeviceInfo& d) { return d.isLaptopBattery(); });
+    int laptopBatteryCount = static_cast<int>(laptopEnd - devices.begin());
+
     std::vector<TooltipRow> rows;
-    for (const auto& dev : m_upower->batteryDevices()) {
-      std::string name = !dev.model.empty() ? dev.model : (!dev.nativePath.empty() ? dev.nativePath : "Battery");
+    int laptopBatteryIndex = 0;
+    for (const auto& dev : devices) {
+      std::string name;
+      if (dev.isLaptopBattery()) {
+        name = (laptopBatteryCount > 1) ? ("Battery " + std::to_string(++laptopBatteryIndex)) : "Battery";
+      } else {
+        name = !dev.model.empty() ? dev.model : (!dev.nativePath.empty() ? dev.nativePath : "Unknown Device");
+      }
       int dp = static_cast<int>(std::round(dev.state.percentage));
       rows.push_back({std::move(name), std::to_string(dp) + "%"});
     }

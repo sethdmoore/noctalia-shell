@@ -15,6 +15,7 @@
   fontconfig,
   cairo,
   pango,
+  harfbuzz,
   libxkbcommon,
   sdbus-cpp_2,
   systemd,
@@ -58,6 +59,7 @@ stdenv.mkDerivation {
     fontconfig
     cairo
     pango
+    harfbuzz
     libxkbcommon
     sdbus-cpp_2
     systemd

@@ -50,7 +50,7 @@ void DesktopWeatherWidget::create() {
   rootNode->addChild(std::move(glyph));
 
   auto temperature = std::make_unique<Label>();
-  temperature->setBold(true);
+  temperature->setFontWeight(FontWeight::Bold);
   temperature->setTextAlign(TextAlign::Start);
   temperature->setFontSize(temperatureFontSize(contentScale()));
   temperature->setMaxLines(1);

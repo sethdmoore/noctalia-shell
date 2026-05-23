@@ -1,5 +1,6 @@
 #include "shell/bar/widgets/volume_widget.h"
 
+#include "config/config_types.h"
 #include "pipewire/pipewire_service.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
@@ -33,8 +34,9 @@ namespace {
 
 } // namespace
 
-VolumeWidget::VolumeWidget(PipeWireService* audio, wl_output* output, bool showLabel, VolumeWidgetTarget target)
-    : m_audio(audio), m_output(output), m_showLabel(showLabel), m_target(target) {}
+VolumeWidget::VolumeWidget(PipeWireService* audio, const Config* config, wl_output* output, bool showLabel,
+                           VolumeWidgetTarget target)
+    : m_audio(audio), m_config(config), m_output(output), m_showLabel(showLabel), m_target(target) {}
 
 void VolumeWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -48,7 +50,8 @@ void VolumeWidget::create() {
       return;
     }
     const float delta = data.scrollDelta(1.0f) > 0 ? -kScrollStep : kScrollStep;
-    const float newValue = std::clamp(node->volume + delta, 0.0f, 1.0f);
+    const float maxVolume = (m_config != nullptr && m_config->audio.enableOverdrive) ? 1.5f : 1.0f;
+    const float newValue = std::clamp(node->volume + delta, 0.0f, maxVolume);
     if (m_target == VolumeWidgetTarget::Input) {
       m_audio->setSourceVolume(node->id, newValue);
     } else {
@@ -64,7 +67,7 @@ void VolumeWidget::create() {
   area->addChild(std::move(glyph));
 
   auto label = std::make_unique<Label>();
-  label->setBold(true);
+  label->setFontWeight(labelFontWeight());
   label->setFontSize(Style::fontSizeBody * m_contentScale);
   label->setVisible(m_showLabel);
   m_label = label.get();

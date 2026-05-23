@@ -4,6 +4,7 @@
 #include "shell/bar/widget.h"
 #include "system/desktop_entry.h"
 #include "system/icon_resolver.h"
+#include "ui/style.h"
 
 #include <cstdint>
 #include <functional>
@@ -21,7 +22,8 @@ class TrayWidget : public Widget {
 public:
   TrayWidget(TrayService* tray, std::vector<std::string> hiddenItems = {}, std::vector<std::string> pinnedItems = {},
              bool drawerMode = false, std::function<void()> itemActivated = {}, std::string barPosition = "top",
-             bool panelGridMode = false, std::size_t panelGridColumns = 3);
+             bool panelGridMode = false, std::size_t panelGridColumns = 3, float inlineEntryGap = Style::spaceXs,
+             bool matchAdjacentSpacing = false);
 
   void create() override;
 
@@ -37,6 +39,9 @@ private:
   [[nodiscard]] bool isPinnedItem(const TrayItemInfo& item) const;
   [[nodiscard]] bool isHiddenItem(const TrayItemInfo& item) const;
   [[nodiscard]] std::string drawerChevronGlyph(bool panelOpen) const;
+  // Bar section gap is between capsule shells; inline tray icons share one shell, so add the
+  // lateral inset that adjacent single-icon capsules would contribute between their icons.
+  [[nodiscard]] float resolvedInlineEntryGap() const;
 
   TrayService* m_tray = nullptr;
   Flex* m_container = nullptr;
@@ -59,6 +64,8 @@ private:
   std::string m_barPosition;
   bool m_panelGridMode = false;
   std::size_t m_panelGridColumns = 3;
+  float m_inlineEntryGap = Style::spaceXs;
+  bool m_matchAdjacentSpacing = false;
   InputArea* m_drawerTrigger = nullptr;
   Glyph* m_drawerChevron = nullptr;
   std::string m_drawerChevronGlyph;

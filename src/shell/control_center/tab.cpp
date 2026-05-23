@@ -7,8 +7,8 @@
 
 namespace control_center {
 
-  void applySectionCardStyle(Flex& card, float scale, float fillOpacity) {
-    card.setCardStyle(scale, fillOpacity);
+  void applySectionCardStyle(Flex& card, float scale, float fillOpacity, bool showBorder) {
+    card.setCardStyle(scale, fillOpacity, showBorder);
     card.setDirection(FlexDirection::Vertical);
     card.setAlign(FlexAlign::Stretch);
     card.setGap(Style::spaceSm * scale);
@@ -18,7 +18,7 @@ namespace control_center {
   Label* addTitle(Flex& parent, const std::string& text, float scale) {
     auto label = std::make_unique<Label>();
     label->setText(text);
-    label->setBold(true);
+    label->setFontWeight(FontWeight::Bold);
     label->setFontSize(Style::fontSizeTitle * scale);
     label->setColor(colorSpecFromRole(ColorRole::OnSurface));
     auto* ptr = label.get();

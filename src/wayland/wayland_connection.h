@@ -1,5 +1,6 @@
 #pragma once
 
+#include "wayland/ext_foreign_toplevels.h"
 #include "wayland/wayland_seat.h"
 #include "wayland/wayland_toplevels.h"
 
@@ -39,6 +40,7 @@ struct ext_workspace_manager_v1;
 struct zdwl_ipc_manager_v2;
 struct zwp_virtual_keyboard_manager_v1;
 struct hyprland_focus_grab_manager_v1;
+struct hyprland_toplevel_mapping_manager_v1;
 struct zwlr_gamma_control_manager_v1;
 struct wp_fractional_scale_manager_v1;
 struct wp_viewporter;
@@ -81,6 +83,8 @@ public:
   void setWorkspaceManagerCallbacks(std::function<void(ext_workspace_manager_v1*)> extWorkspace,
                                     std::function<void(zdwl_ipc_manager_v2*)> dwlIpc);
   void setToplevelChangeCallback(ChangeCallback callback);
+  void setHyprlandToplevelMappingManagerCallback(
+      std::function<void(hyprland_toplevel_mapping_manager_v1* manager)> callback);
   void setPointerEventCallback(WaylandSeat::PointerEventCallback callback);
   void setKeyboardEventCallback(WaylandSeat::KeyboardEventCallback callback);
   /// Fired when both `ext_idle_notifier_v1` and `wl_seat` are bound (including late registry globals).
@@ -103,6 +107,7 @@ public:
   [[nodiscard]] bool hasExtWorkspaceManager() const noexcept;
   [[nodiscard]] bool hasDwlIpcManager() const noexcept;
   [[nodiscard]] bool hasForeignToplevelManager() const noexcept;
+  [[nodiscard]] bool hasExtForeignToplevelList() const noexcept;
   [[nodiscard]] bool hasSessionLockManager() const noexcept;
   [[nodiscard]] bool hasIdleNotifier() const noexcept;
   [[nodiscard]] bool hasIdleInhibitManager() const noexcept;
@@ -144,8 +149,16 @@ public:
   [[nodiscard]] std::vector<std::string> runningAppIds(wl_output* outputFilter = nullptr) const;
   [[nodiscard]] std::vector<ToplevelInfo> windowsForApp(const std::string& idLower, const std::string& wmClassLower,
                                                         wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] std::vector<ToplevelInfo> extWindowsForApp(const std::string& idLower,
+                                                           const std::string& wmClassLower) const;
+  template <typename Fn> void visitExtToplevelHandles(Fn&& fn) const {
+    m_extForeignToplevels.visitExtHandles(std::forward<Fn>(fn));
+  }
   void activateToplevel(zwlr_foreign_toplevel_handle_v1* handle);
   void closeToplevel(zwlr_foreign_toplevel_handle_v1* handle);
+  template <typename Fn> void visitWlrToplevelHandles(Fn&& fn) const {
+    m_toplevelsHandler.visitWlrHandles(std::forward<Fn>(fn));
+  }
   [[nodiscard]] wl_output* lastPointerOutput() const noexcept;
   [[nodiscard]] wl_surface* lastPointerSurface() const noexcept;
   [[nodiscard]] wl_surface* lastKeyboardSurface() const noexcept;
@@ -212,6 +225,7 @@ private:
   bool m_hasExtWorkspaceGlobal = false;
   bool m_hasDwlIpcGlobal = false;
   bool m_hasForeignToplevelManagerGlobal = false;
+  bool m_hasExtForeignToplevelListGlobal = false;
   std::vector<WaylandOutput> m_outputs;
   ChangeCallback m_outputChangeCallback;
   ChangeCallback m_idleCapabilitiesReadyCallback;
@@ -219,6 +233,7 @@ private:
   std::function<void(wl_output*)> m_outputRemovedCallback;
   std::function<void(ext_workspace_manager_v1*)> m_extWorkspaceManagerCallback;
   std::function<void(zdwl_ipc_manager_v2*)> m_dwlIpcManagerCallback;
+  std::function<void(hyprland_toplevel_mapping_manager_v1*)> m_hyprlandToplevelMappingManagerCallback;
   std::unordered_map<wl_surface*, wl_output*> m_surfaceOutputMap;
   std::unordered_map<wl_surface*, zwlr_layer_surface_v1*> m_layerSurfaceMap;
   wl_output* m_lastPointerOutput = nullptr;
@@ -227,4 +242,5 @@ private:
 
   WaylandSeat m_seatHandler;
   WaylandToplevels m_toplevelsHandler;
+  WaylandExtForeignToplevels m_extForeignToplevels;
 };

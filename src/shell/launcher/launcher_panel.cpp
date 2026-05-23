@@ -2,6 +2,7 @@
 
 #include "config/config_service.h"
 #include "core/deferred_call.h"
+#include "core/key_symbols.h"
 #include "core/keybind_matcher.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
@@ -113,7 +114,7 @@ namespace {
 
       auto title = std::make_unique<Label>();
       title->setFontSize(Style::fontSizeBody * scale);
-      title->setBold(true);
+      title->setFontWeight(FontWeight::Bold);
       title->setColor(colorSpecFromRole(ColorRole::OnSurface));
       title->setMaxLines(1);
       m_title = static_cast<Label*>(m_textCol->addChild(std::move(title)));
@@ -687,23 +688,40 @@ void LauncherPanel::activateSelected() {
 }
 
 bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
-  if (KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
-    if (m_selectedIndex > 0) {
-      --m_selectedIndex;
-      if (m_grid != nullptr) {
-        m_grid->setSelectedIndex(m_selectedIndex);
-      }
+  const auto moveSelection = [this](int delta) {
+    if (m_results.empty()) {
+      return;
     }
+    const int last = static_cast<int>(m_results.size() - 1);
+    const int next = std::clamp(static_cast<int>(m_selectedIndex) + delta, 0, last);
+    if (next == static_cast<int>(m_selectedIndex)) {
+      return;
+    }
+    m_selectedIndex = static_cast<std::size_t>(next);
+    if (m_grid != nullptr) {
+      m_grid->setSelectedIndex(m_selectedIndex);
+    }
+  };
+
+  if (KeySymbol::isPageUp(sym)) {
+    const int stride = m_grid != nullptr ? static_cast<int>(m_grid->pageItemStride()) : 1;
+    moveSelection(-stride);
+    return true;
+  }
+
+  if (KeySymbol::isPageDown(sym)) {
+    const int stride = m_grid != nullptr ? static_cast<int>(m_grid->pageItemStride()) : 1;
+    moveSelection(stride);
+    return true;
+  }
+
+  if (KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
+    moveSelection(-1);
     return true;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)) {
-    if (!m_results.empty() && m_selectedIndex < m_results.size() - 1) {
-      ++m_selectedIndex;
-      if (m_grid != nullptr) {
-        m_grid->setSelectedIndex(m_selectedIndex);
-      }
-    }
+    moveSelection(1);
     return true;
   }
 

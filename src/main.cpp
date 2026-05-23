@@ -292,8 +292,8 @@ int main(int argc, char* argv[]) {
 
   {
     const char* home = std::getenv("HOME");
-    if (home != nullptr && home[0] != '\0') {
-      (void)::chdir(home);
+    if (home != nullptr && home[0] != '\0' && ::chdir(home) != 0) {
+      std::fprintf(stderr, "warning: failed to chdir to HOME (%s): %s\n", home, std::strerror(errno));
     }
   }
 

@@ -144,11 +144,15 @@ std::vector<Workspace> MangoWorkspaceBackend::forOutput(wl_output* output) const
     return {};
   }
 
+  const auto& tags = it->second.tags;
+  const auto shellActive = shellActiveTagIndex(tags);
+
   std::vector<Workspace> result;
-  result.reserve(it->second.tags.size());
-  for (std::size_t displayIndex = 0; displayIndex < it->second.tags.size(); ++displayIndex) {
+  result.reserve(tags.size());
+  for (std::size_t displayIndex = 0; displayIndex < tags.size(); ++displayIndex) {
     const std::size_t protocolIndex = protocolIndexForDisplay(displayIndex);
-    result.push_back(makeWorkspace(displayIndex, it->second.tags[protocolIndex]));
+    const bool isShellActive = shellActive.has_value() && displayIndex == *shellActive;
+    result.push_back(makeWorkspace(displayIndex, tags[protocolIndex], isShellActive));
   }
   return result;
 }
@@ -235,7 +239,7 @@ void MangoWorkspaceBackend::onOutputAppId(zdwl_ipc_output_v2* handle, const char
 }
 
 void MangoWorkspaceBackend::onOutputTag(zdwl_ipc_output_v2* handle, std::uint32_t tag, std::uint32_t stateValue,
-                                        std::uint32_t clients, std::uint32_t /*focused*/) {
+                                        std::uint32_t clients, std::uint32_t focused) {
   const auto it = m_outputByHandle.find(handle);
   if (it == m_outputByHandle.end()) {
     return;
@@ -264,6 +268,7 @@ void MangoWorkspaceBackend::onOutputTag(zdwl_ipc_output_v2* handle, std::uint32_
   tagInfo.active = (stateValue & ZDWL_IPC_OUTPUT_V2_TAG_STATE_ACTIVE) != 0;
   tagInfo.urgent = (stateValue & ZDWL_IPC_OUTPUT_V2_TAG_STATE_URGENT) != 0;
   tagInfo.occupied = clients > 0;
+  tagInfo.hasFocusedClient = focused != 0;
 }
 
 void MangoWorkspaceBackend::onOutputFrame(zdwl_ipc_output_v2* handle) {
@@ -358,12 +363,36 @@ std::optional<std::size_t> MangoWorkspaceBackend::parseTagIndex(const std::strin
 
 std::size_t MangoWorkspaceBackend::protocolIndexForDisplay(std::size_t displayIndex) const { return displayIndex; }
 
-Workspace MangoWorkspaceBackend::makeWorkspace(std::size_t index, const TagInfo& tag) {
+std::optional<std::size_t> MangoWorkspaceBackend::shellActiveTagIndex(const std::vector<TagInfo>& tags) const {
+  std::vector<std::size_t> activeTags;
+  activeTags.reserve(tags.size());
+  for (std::size_t displayIndex = 0; displayIndex < tags.size(); ++displayIndex) {
+    if (tags[protocolIndexForDisplay(displayIndex)].active) {
+      activeTags.push_back(displayIndex);
+    }
+  }
+  if (activeTags.empty()) {
+    return std::nullopt;
+  }
+  if (activeTags.size() == 1) {
+    return activeTags.front();
+  }
+
+  // Overview/comboview can mark multiple dwl tags ACTIVE at once, only mark last workspace as active
+  for (const std::size_t displayIndex : activeTags) {
+    if (tags[protocolIndexForDisplay(displayIndex)].hasFocusedClient) {
+      return displayIndex;
+    }
+  }
+  return activeTags.front();
+}
+
+Workspace MangoWorkspaceBackend::makeWorkspace(std::size_t index, const TagInfo& tag, bool shellActive) {
   return Workspace{
       .id = std::to_string(index + 1),
       .name = std::to_string(index + 1),
       .coordinates = {static_cast<std::uint32_t>(index)},
-      .active = tag.active,
+      .active = shellActive,
       .urgent = tag.urgent,
       .occupied = tag.occupied,
   };

@@ -1,4 +1,5 @@
 #include "config/config_service.h"
+#include "core/key_chord.h"
 #include "core/log.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "theme/scheme.h"
@@ -130,8 +131,8 @@ namespace {
            a.radiusTopRight == b.radiusTopRight && a.radiusBottomLeft == b.radiusBottomLeft &&
            a.radiusBottomRight == b.radiusBottomRight && a.marginEnds == b.marginEnds && a.marginEdge == b.marginEdge &&
            a.padding == b.padding && a.widgetSpacing == b.widgetSpacing && a.shadow == b.shadow &&
-           a.contactShadow == b.contactShadow && nearlyEqual(a.scale, b.scale) && a.startWidgets == b.startWidgets &&
-           a.centerWidgets == b.centerWidgets && a.endWidgets == b.endWidgets &&
+           a.contactShadow == b.contactShadow && nearlyEqual(a.scale, b.scale) && a.fontWeight == b.fontWeight &&
+           a.startWidgets == b.startWidgets && a.centerWidgets == b.centerWidgets && a.endWidgets == b.endWidgets &&
            a.widgetCapsuleDefault == b.widgetCapsuleDefault &&
            colorSpecEqual(a.widgetCapsuleFill, b.widgetCapsuleFill) &&
            optionalColorSpecEqual(a.widgetCapsuleForeground, b.widgetCapsuleForeground) &&
@@ -238,7 +239,7 @@ namespace {
     if (ovr.widgetCapsulePadding) {
       resolved.widgetCapsulePadding = std::clamp(static_cast<float>(*ovr.widgetCapsulePadding), 0.0f, 48.0f);
     }
-    if (ovr.widgetCapsuleRadius) {
+    if (ovr.widgetCapsuleRadius.has_value()) {
       resolved.widgetCapsuleRadius = std::clamp(*ovr.widgetCapsuleRadius, 0.0, 80.0);
     }
     if (ovr.widgetCapsuleOpacity) {
@@ -319,7 +320,8 @@ namespace {
            nearlyEqual(a.activeScale, b.activeScale) && nearlyEqual(a.inactiveScale, b.inactiveScale) &&
            nearlyEqual(a.activeOpacity, b.activeOpacity) && nearlyEqual(a.inactiveOpacity, b.inactiveOpacity) &&
            a.showDots == b.showDots && a.showInstanceCount == b.showInstanceCount &&
-           a.launcherPosition == b.launcherPosition && a.launcherIcon == b.launcherIcon && a.pinned == b.pinned;
+           a.launcherPosition == b.launcherPosition && a.launcherIcon == b.launcherIcon && a.pinned == b.pinned &&
+           a.monitors == b.monitors;
   }
 
   bool shellConfigEqual(const ShellConfig& a, const ShellConfig& b) {
@@ -337,6 +339,7 @@ namespace {
            a.clipboardImageActionCommand == b.clipboardImageActionCommand && a.shadow.blur == b.shadow.blur &&
            a.shadow.offsetX == b.shadow.offsetX && a.shadow.offsetY == b.shadow.offsetY &&
            nearlyEqual(a.shadow.alpha, b.shadow.alpha) && a.panel.backgroundBlur == b.panel.backgroundBlur &&
+           a.panel.borders == b.panel.borders && a.panel.shadow == b.panel.shadow &&
            a.panel.transparencyMode == b.panel.transparencyMode &&
            a.panel.launcherPlacement == b.panel.launcherPlacement &&
            a.panel.clipboardPlacement == b.panel.clipboardPlacement &&
@@ -397,7 +400,8 @@ namespace {
            nearlyEqual(a.backdrop.tintIntensity, b.backdrop.tintIntensity) && dockConfigEqual(a.dock, b.dock) &&
            desktopWidgetsConfigEqual(a.desktopWidgets, b.desktopWidgets) && shellConfigEqual(a.shell, b.shell) &&
            a.osd.position == b.osd.position && a.osd.orientation == b.osd.orientation &&
-           a.osd.lockKeys == b.osd.lockKeys && notificationConfigEqual(a.notification, b.notification) &&
+           nearlyEqual(a.osd.scale, b.osd.scale) && a.osd.lockKeys == b.osd.lockKeys &&
+           a.osd.keyboardLayout == b.osd.keyboardLayout && notificationConfigEqual(a.notification, b.notification) &&
            a.weather.enabled == b.weather.enabled && a.weather.autoLocate == b.weather.autoLocate &&
            a.weather.effects == b.weather.effects && a.weather.address == b.weather.address &&
            a.weather.refreshMinutes == b.weather.refreshMinutes && a.weather.unit == b.weather.unit &&
@@ -501,6 +505,9 @@ namespace {
                 row.insert_or_assign("glyph", *item.glyph);
               }
               row.insert_or_assign("variant", std::string(enumToKey(kSessionActionButtonVariants, item.variant)));
+              if (item.shortcut.has_value()) {
+                row.insert_or_assign("shortcut", keyChordToString(*item.shortcut));
+              }
               array.push_back(std::move(row));
             }
             table.insert_or_assign(key, std::move(array));
@@ -635,6 +642,9 @@ namespace {
   }
 
   bool overridePresenceIsSemantic(const std::vector<std::string>& path) {
+    if (path.size() == 3 && path[0] == "widget" && path[2] == "type") {
+      return true;
+    }
     if (path.size() != 5 || path[0] != "bar" || path[2] != "monitor") {
       return false;
     }

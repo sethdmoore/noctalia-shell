@@ -42,6 +42,7 @@ cairo_ft_dep        = dependency('cairo-ft')
 pango_dep           = dependency('pango')
 pangocairo_dep      = dependency('pangocairo')
 pangoft2_dep        = dependency('pangoft2')
+harfbuzz_dep        = dependency('harfbuzz')
 librsvg_dep         = dependency('librsvg-2.0')
 xkbcommon_dep       = dependency('xkbcommon')
 glib_dep            = dependency('glib-2.0')
@@ -258,6 +259,8 @@ foreach _p : [
     wayland_protos_dir / 'stable/xdg-shell/xdg-shell.xml'],
   ['ext-workspace-v1',
     wayland_protos_dir / 'staging/ext-workspace/ext-workspace-v1.xml'],
+  ['ext-foreign-toplevel-list-v1',
+    wayland_protos_dir / 'staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml'],
   ['ext-data-control-v1',
     wayland_protos_dir / 'staging/ext-data-control/ext-data-control-v1.xml'],
   ['xdg-activation-v1',
@@ -288,6 +291,8 @@ foreach _p : [
     'protocols/wlr-data-control-unstable-v1.xml'],
   ['hyprland-focus-grab-v1',
     'protocols/hyprland-focus-grab-v1.xml'],
+  ['hyprland-toplevel-mapping-v1',
+    'protocols/hyprland-toplevel-mapping-v1.xml'],
   ['wlr-gamma-control-unstable-v1',
     'protocols/wlr-gamma-control-unstable-v1.xml'],
 ]
@@ -429,6 +434,7 @@ _noctalia_sources = files(
   'src/scripting/script_runtime.cpp',
   'src/scripting/script_worker_pool.cpp',
   'src/scripting/scripted_widget_bindings.cpp',
+  'src/scripting/scripted_widget_manifest.cpp',
   'src/shell/bar/bar.cpp',
   'src/shell/clipboard/clipboard_paste.cpp',
   'src/shell/dock/dock.cpp',
@@ -479,6 +485,7 @@ _noctalia_sources = files(
   'src/shell/osd/audio_osd.cpp',
   'src/shell/osd/brightness_osd.cpp',
   'src/shell/osd/lock_keys_osd.cpp',
+  'src/shell/osd/keyboard_layout_osd.cpp',
   'src/shell/osd/osd_overlay.cpp',
   'src/shell/tooltip/tooltip_manager.cpp',
   'src/shell/screen_corners/screen_corners.cpp',
@@ -587,6 +594,7 @@ _noctalia_sources = files(
   'src/ui/controls/keybind_recorder.cpp',
   'src/ui/controls/label.cpp',
   'src/ui/controls/list_editor.cpp',
+  'src/ui/controls/color_swatch_preview.cpp',
   'src/ui/controls/progress_bar.cpp',
   'src/ui/controls/radio_button.cpp',
   'src/ui/controls/scrollbar.cpp',
@@ -620,6 +628,8 @@ _noctalia_sources = files(
   'src/compositors/hyprland/hyprland_output_backend.cpp',
   'src/compositors/hyprland/hyprland_workspace_backend.cpp',
   'src/compositors/hyprland/hyprland_keyboard_backend.cpp',
+  'src/compositors/hyprland/hyprland_window_id.cpp',
+  'src/compositors/hyprland/hyprland_toplevel_mapping.cpp',
   'src/compositors/mango/mango_keyboard_backend.cpp',
   'src/compositors/mango/mango_output_backend.cpp',
   'src/compositors/mango/mango_workspace_backend.cpp',
@@ -639,6 +649,7 @@ _noctalia_sources = files(
   'src/wayland/wayland_connection.cpp',
   'src/wayland/wayland_seat.cpp',
   'src/wayland/wayland_toplevels.cpp',
+  'src/wayland/ext_foreign_toplevels.cpp',
   'src/wayland/wayland_workspaces.cpp',
   'src/theme/scheme.cpp',
   'src/theme/color.cpp',
@@ -711,6 +722,7 @@ executable('noctalia',
     pango_dep,
     pangocairo_dep,
     pangoft2_dep,
+    harfbuzz_dep,
     librsvg_dep,
     xkbcommon_dep,
     glib_dep,

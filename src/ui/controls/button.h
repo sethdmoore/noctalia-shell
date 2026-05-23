@@ -10,6 +10,7 @@
 
 class AnimationManager;
 
+class Flex;
 class Glyph;
 class InputArea;
 class Label;
@@ -68,6 +69,8 @@ public:
   void setOnLeave(std::function<void()> callback);
   void setHoverSuppressed(bool suppressed);
   void setCursorShape(std::uint32_t shape);
+  void setBadge(std::string_view text);
+  void setBadgeFontSize(float size);
 
   // Call after layout() to sync InputArea bounds
   void updateInputArea();
@@ -91,8 +94,12 @@ private:
 
   void applyColors(const Color& bg, const Color& border, const Color& label);
 
+  void ensureBadge();
+
   Glyph* m_glyph = nullptr;
   Label* m_label = nullptr;
+  Flex* m_badge = nullptr;
+  Label* m_badgeLabel = nullptr;
   InputArea* m_inputArea = nullptr;
   std::uint32_t m_animId = 0;
   std::function<void()> m_onClick;

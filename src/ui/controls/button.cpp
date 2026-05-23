@@ -273,6 +273,37 @@ void Button::setCursorShape(std::uint32_t shape) {
   }
 }
 
+void Button::setBadge(std::string_view text) {
+  ensureBadge();
+  m_badgeLabel->setText(text);
+  m_badge->setVisible(!text.empty());
+}
+
+void Button::setBadgeFontSize(float size) {
+  ensureBadge();
+  m_badgeLabel->setFontSize(size);
+}
+
+void Button::ensureBadge() {
+  if (m_badge != nullptr) {
+    return;
+  }
+  auto badge = std::make_unique<Flex>();
+  badge->setDirection(FlexDirection::Horizontal);
+  badge->setAlign(FlexAlign::Center);
+  badge->setJustify(FlexJustify::Center);
+  badge->setPadding(2.0f, Style::spaceXs);
+  badge->setRadius(Style::scaledRadiusSm());
+  badge->setParticipatesInLayout(false);
+  badge->setVisible(false);
+
+  auto label = std::make_unique<Label>();
+  label->setFontSize(Style::fontSizeCaption * 0.85f);
+  m_badgeLabel = static_cast<Label*>(badge->addChild(std::move(label)));
+
+  m_badge = static_cast<Flex*>(addChild(std::move(badge)));
+}
+
 void Button::updateInputArea() {
   if (m_inputArea != nullptr) {
     m_inputArea->setPosition(0.0f, 0.0f);
@@ -394,13 +425,19 @@ void Button::applyColors(const Color& bg, const Color& border, const Color& labe
     m_glyph->setColor(label);
   }
   for (auto& child : children()) {
-    if (child.get() == m_label || child.get() == m_glyph) {
+    if (child.get() == m_label || child.get() == m_glyph || child.get() == m_badge) {
       continue;
     }
     if (auto* lbl = dynamic_cast<Label*>(child.get())) {
       lbl->setColor(label);
     } else if (auto* gl = dynamic_cast<Glyph*>(child.get())) {
       gl->setColor(label);
+    }
+  }
+  if (m_badge != nullptr) {
+    m_badge->setFill(Color{label.r, label.g, label.b, label.a * 0.85f});
+    if (m_badgeLabel != nullptr) {
+      m_badgeLabel->setColor(bg);
     }
   }
   m_visualStateInitialized = true;
@@ -563,6 +600,16 @@ void Button::doLayout(Renderer& renderer) {
   if (m_inputArea != nullptr) {
     m_inputArea->setPosition(0.0f, 0.0f);
     m_inputArea->setSize(width(), height());
+  }
+
+  if (m_badge != nullptr && m_badge->visible()) {
+    m_badgeLabel->measure(renderer);
+    m_badge->setMinWidth(0.0f);
+    m_badge->layout(renderer);
+    m_badge->setMinWidth(m_badge->height());
+    m_badge->layout(renderer);
+    const float margin = Style::spaceXs;
+    m_badge->setPosition(width() - m_badge->width() - margin, margin);
   }
 
   // Only apply visual state if no animation is in progress — a running

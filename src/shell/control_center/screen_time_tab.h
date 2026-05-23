@@ -7,7 +7,6 @@
 #include <string>
 
 class Box;
-class ConfigService;
 class Flex;
 class InputArea;
 class Glyph;
@@ -16,11 +15,10 @@ class Label;
 class Renderer;
 class ScreenTimeService;
 class Segmented;
-class Toggle;
 
 class ScreenTimeTab : public Tab {
 public:
-  ScreenTimeTab(ScreenTimeService* screenTime, ConfigService* config = nullptr);
+  explicit ScreenTimeTab(ScreenTimeService* screenTime);
 
   std::unique_ptr<Flex> create() override;
   void onClose() override;
@@ -36,14 +34,12 @@ private:
   [[nodiscard]] std::string resolveIconPath(const std::string& appKey) const;
 
   ScreenTimeService* m_screenTime = nullptr;
-  ConfigService* m_config = nullptr;
   bool m_active = false;
   int m_rangeDays = 1;
   std::string m_lastSnapshotKey;
 
   Flex* m_root = nullptr;
   Flex* m_usageCard = nullptr;
-  Toggle* m_enabledToggle = nullptr;
   Label* m_disabledLabel = nullptr;
   Segmented* m_rangePicker = nullptr;
   Flex* m_chartPlotRow = nullptr;

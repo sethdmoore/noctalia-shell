@@ -16,7 +16,7 @@
     "title": "Clipboard",
     "filter-placeholder": "Filter clipboard...",
     "entry": {
-      "title": "Clipboard entry",
+      "title": "Clipboard Entry",
       "image": "Image"
     },
     "preview": {
@@ -160,8 +160,7 @@
       "screen-time": "Screen Time"
     },
     "screen-time": {
-      "enabled": "Screen time tracking",
-      "disabled": "Screen time tracking is off. Enable it to record per-app usage.",
+      "disabled": "Screen time tracking is off. Enable it in Settings to record per-app usage.",
       "most-used": "MOST USED",
       "range": {
         "today": "Today",
@@ -597,6 +596,7 @@
       "keybind-invalid-title": "Keybind not allowed",
       "keybind-invalid-super": "The Super/Windows key cannot be used in shell keybinds.",
       "keybind-invalid-printable": "Printable keys (letters, numbers, symbols) require a modifier such as Ctrl or Alt.",
+      "keybind-invalid-modifier": "This shortcut accepts a single key without modifiers.",
       "power-profiles": "Power profiles",
       "power-profile-title": "Power mode",
       "power-profile-body": "Switched to: {profile}"
@@ -688,6 +688,7 @@
       "label-placeholder": "Optional button text",
       "glyph-field": "Glyph",
       "glyph-placeholder": "Optional icon id",
+      "shortcut-label": "Shortcut",
       "variant-label": "Button style",
       "move-up": "Up",
       "move-down": "Down",
@@ -843,10 +844,10 @@
           "create-description": "Choose a widget id for type \"{type}\""
         },
         "instance": {
-          "create-title": "New named {type} widget",
           "create-save": "Create",
           "rename": "Rename",
           "id-placeholder": "Widget id",
+          "id-description": "Use letters, numbers, underscores, or hyphens only. No spaces; must be unique.",
           "rename-save": "Save",
           "delete": "Delete",
           "delete-confirm-title": "Delete \"{name}\"?",
@@ -855,7 +856,7 @@
         "inspector": {
           "edit-title": "Editing widget",
           "add-title": "Add widget to {lane}",
-          "add-instance-title": "Add {widget} widget to {lane}",
+          "add-instance-title": "Add new named {widget} widget to {lane}",
           "move-to-lane": "Move to {lane}"
         },
         "detail": {
@@ -932,6 +933,22 @@
       }
     },
     "options": {
+      "bar": {
+        "font-weight": {
+          "thin": "Thin",
+          "ultra-light": "Ultra Light",
+          "light": "Light",
+          "semi-light": "Semi Light",
+          "book": "Book",
+          "regular": "Regular",
+          "medium": "Medium",
+          "semi-bold": "Semi Bold",
+          "bold": "Bold",
+          "ultra-bold": "Ultra Bold",
+          "heavy": "Heavy",
+          "ultra-heavy": "Ultra Heavy"
+        }
+      },
       "theme": {
         "mode": {
           "dark": "Dark",
@@ -1037,6 +1054,8 @@
         "date": "Date",
         "input-volume": "Input Volume",
         "output-volume": "Output Volume",
+        "network-rx": "Network RX",
+        "network-tx": "Network TX",
         "ram": "RAM",
         "temp": "Temperature"
       },
@@ -1085,6 +1104,8 @@
         "graph": "Graph",
         "graphic": "Graphic",
         "icon": "Icon",
+        "icon-and-text": "Icon and Text",
+        "icon-only": "Icon Only",
         "id": "ID",
         "input": "Input",
         "instance": "Per Placement",
@@ -1102,7 +1123,8 @@
         "workspace-label-centered": "Centered",
         "workspace-label-inside": "Inside pill",
         "swap-percent": "Swap Percent",
-        "text": "Text"
+        "text": "Text",
+        "text-only": "Text Only"
       },
       "settings": {
         "anchor": {
@@ -1147,9 +1169,9 @@
         },
         "capsule_radius": {
           "label": "Capsule Radius",
-          "description": "Corner radius for this widget capsule; leave blank for automatic pill shape",
-          "taskbar-description": "Corner radius for this widget capsule and taskbar workspace groups; leave blank for automatic pill shape",
-          "workspaces-description": "Corner radius for this widget capsule and workspace pills; leave blank for automatic pill shape"
+          "description": "Corner radius for this widget capsule; leave blank for automatic pill shape, or set 0 for square corners",
+          "taskbar-description": "Corner radius for the widget capsule, workspace disc indicators, and workspace group capsules; leave blank for automatic pill shape, or set 0 for square corners",
+          "workspaces-description": "Corner radius for this widget capsule and workspace pills; leave blank for automatic pill shape, or set 0 for square corners"
         },
         "color": {
           "label": "Color",
@@ -1174,7 +1196,8 @@
         },
         "display": {
           "label": "Display",
-          "description": "Display mode for this widget"
+          "description": "Display mode for this widget",
+          "active-window-description": "Icon, title, or both on horizontal bars. Vertical bars stay icon-only."
         },
         "display_mode": {
           "label": "Display Mode",
@@ -1228,6 +1251,10 @@
           "label": "Hide Empty Workspaces",
           "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list."
         },
+        "workspace_group_capsule": {
+          "label": "Workspace Group Capsule",
+          "description": "Draw the background and border around each grouped workspace. Turn off to keep icon grouping and workspace disc labels only."
+        },
         "height": {
           "label": "Height",
           "description": "Widget height in pixels"
@@ -1239,6 +1266,10 @@
         "pinned": {
           "label": "Pinned Items",
           "description": "Tray item ids that stay visible in the bar when drawer mode is enabled"
+        },
+        "match_adjacent_spacing": {
+          "label": "Match Adjacent Widget Spacing",
+          "description": "Widen gaps between inline tray icons to match the visual spacing of neighboring bar widgets (includes capsule padding)"
         },
         "drawer": {
           "label": "Use Drawer Panel",
@@ -1255,6 +1286,18 @@
         "hide_when_no_unread": {
           "label": "Hide When No New",
           "description": "Hide the notifications widget when there are no unread notifications"
+        },
+        "hide_when_plugged": {
+          "label": "Hide When Plugged In",
+          "description": "Hide the battery widget while connected to AC power"
+        },
+        "hide_when_full": {
+          "label": "Hide When Full",
+          "description": "Hide the battery widget when fully charged"
+        },
+        "hide_when_no_media": {
+          "label": "Hide When No Media",
+          "description": "Hide the media widget when no MPRIS player is active"
         },
         "hide_when_empty": {
           "label": "Hide When Empty",
@@ -1277,6 +1320,11 @@
           "label": "Max Label Characters",
           "description": "Maximum number of characters to show for workspace names",
           "workspaces-description": "Maximum characters for workspace name labels"
+        },
+        "minimal": {
+          "label": "Minimal Style",
+          "description": "Show workspace id or name labels only, without animated pills",
+          "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation"
         },
         "pill_scale": {
           "label": "Pill Scale",
@@ -1594,7 +1642,7 @@
           "description": "Enable clipboard history, the clipboard panel, and copy/paste integration"
         },
         "screen-time-enabled": {
-          "label": "Screen time",
+          "label": "Screen Time",
           "description": "Track per-app usage and show it in Control Center"
         },
         "clipboard-history-max-entries": {
@@ -1618,15 +1666,27 @@
           "label": "Orientation",
           "description": "Layout direction for OSD popups"
         },
+        "osd-scale": {
+          "label": "Size",
+          "description": "Scale OSD popups relative to the shell UI scale (1.0 keeps the default size)"
+        },
         "osd-lock-keys": {
           "label": "Lock Keys",
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes"
+        },
+        "osd-keyboard-layout": {
+          "label": "Keyboard Layout",
+          "description": "Show an OSD popup when the input keyboard layout changes"
         }
       },
       "dock": {
         "active-monitor-only": {
           "label": "Active Monitor Only",
-          "description": "Only show the dock on the active monitor"
+          "description": "Only show applications running on the active monitor"
+        },
+        "monitors": {
+          "label": "Displays",
+          "description": "Choose which displays show the dock; leave empty for all. Active-monitor filtering applies within these displays."
         },
         "icon-size": {
           "label": "Icon Size",
@@ -1724,6 +1784,13 @@
           "label": "Transparency",
           "description": "Panel glass style, including floating/centered panel opacity and card translucency"
         },
+        "borders": {
+          "label": "Borders",
+          "description": "Draw an outline on panels and section cards inside panels"
+        },
+        "shadow": {
+          "description": "Cast the global surface shadow from panel surfaces"
+        },
         "home-shortcuts": {
           "label": "Home Shortcuts",
           "description": "Choose up to six shortcut buttons for the home tab"
@@ -1734,27 +1801,27 @@
         },
         "compact-control-center": {
           "label": "Compact Sidebar",
-          "description": "Show only icons in the sidebar to make the control center narrower"
+          "description": "Show only icons in the sidebar to make Control Center narrower"
         },
         "placement-launcher": {
           "label": "Placement",
-          "description": "Choose whether Launcher attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the launcher attaches to the bar, floats near it, or opens centered"
         },
         "placement-clipboard": {
           "label": "Placement",
-          "description": "Choose whether Clipboard attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the clipboard attaches to the bar, floats near it, or opens centered"
         },
         "placement-wallpaper": {
           "label": "Placement",
-          "description": "Choose whether Wallpaper attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the wallpaper picker attaches to the bar, floats near it, or opens centered"
         },
         "placement-session": {
           "label": "Placement",
-          "description": "Choose whether Session attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the session menu attaches to the bar, floats near it, or opens centered"
         },
         "open-near-click-control-center": {
           "label": "Open Near Click",
-          "description": "Position the control center panel near the bar click instead of centering it along the bar"
+          "description": "Position the Control Center panel near the bar click instead of centering it along the bar"
         },
         "open-near-click-launcher": {
           "label": "Open Near Click",
@@ -1770,7 +1837,7 @@
         },
         "open-near-click-session": {
           "label": "Open Near Click",
-          "description": "Position the session panel near the bar click instead of centering it along the bar"
+          "description": "Position the session menu panel near the bar click instead of centering it along the bar"
         },
         "session-actions": {
           "label": "Entries",
@@ -1781,7 +1848,7 @@
       },
       "idle": {
         "pre-action-fade": {
-          "label": "Idle dim",
+          "label": "Idle Dim",
           "description": "Seconds of fullscreen dim before the idle command; use 0 to disable"
         },
         "behaviors": {
@@ -1935,23 +2002,23 @@
           "description": "Sample CPU, memory, network, load, temperature, and disk statistics",
           "cpu-poll": {
             "label": "CPU poll interval",
-            "description": "Seconds between CPU usage, CPU temperature, and load-average samples"
+            "description": "1-120 seconds between CPU usage, CPU temperature, and load-average samples"
           },
           "gpu-poll": {
             "label": "GPU poll interval",
-            "description": "Seconds between GPU temperature and VRAM samples"
+            "description": "1-120 seconds between GPU temperature and VRAM samples"
           },
           "memory-poll": {
             "label": "Memory poll interval",
-            "description": "Seconds between RAM usage samples"
+            "description": "1-120 seconds between RAM usage samples"
           },
           "network-poll": {
             "label": "Network poll interval",
-            "description": "Seconds between network throughput samples"
+            "description": "1-120 seconds between network throughput samples"
           },
           "disk-poll": {
             "label": "Disk poll interval",
-            "description": "Seconds between disk usage and swap usage samples"
+            "description": "1-120 seconds between disk usage and swap usage samples"
           }
         },
         "weather-location": {
@@ -1998,7 +2065,7 @@
           "placeholder": "/path/to/sound.wav"
         },
         "mpris-blacklist": {
-          "label": "MPRIS player blacklist",
+          "label": "MPRIS Player Blacklist",
           "description": "Players to ignore for media controls and Now Playing"
         },
         "ddcutil": {
@@ -2157,6 +2224,10 @@
           "label": "Content Scale",
           "description": "Scale factor for bar content"
         },
+        "font-weight": {
+          "label": "Font Weight",
+          "description": "Font weight for bar widget labels"
+        },
         "content-padding": {
           "label": "Content Padding",
           "description": "Padding inside the bar content area"
@@ -2195,7 +2266,7 @@
         },
         "capsule-radius": {
           "label": "Capsule Radius",
-          "description": "Default corner radius for widget capsules, workspace pills, and taskbar workspace groups; leave blank for automatic pill shape"
+          "description": "Default corner radius for widget capsules, workspace pills, and taskbar workspace groups; leave blank for automatic pill shape, or set 0 for square corners"
         },
         "capsule-opacity": {
           "label": "Capsule Opacity",
@@ -2223,7 +2294,7 @@
           "description": "Automatically hide the bar when not in use"
         },
         "reserve-space": {
-          "description": "Reserve screen space for the bar"
+          "description": "Push windows away from the bar edge (only when auto-hide is off; auto-hide always overlays)"
         },
         "ends-margin": {
           "description": "Inset from each end of the bar along its main axis"

@@ -41,7 +41,7 @@ public:
   void setFrameVisible(bool visible);
   /// When the frame is hidden, treat the field as sitting on a solid Primary fill (e.g. segmented control center).
   void setEmbeddedOnSolidPrimary(bool embedded);
-  void setBold(bool bold);
+  void setFontWeight(FontWeight fontWeight);
   void setMinLayoutWidth(float width);
   void setTextAlign(TextAlign align);
   void setOnChange(std::function<void(const std::string&)> callback);

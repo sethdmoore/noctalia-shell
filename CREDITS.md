@@ -23,6 +23,7 @@ Linked dynamically at runtime:
 - **[Mesa / EGL / GLES2](https://www.mesa3d.org/)** (or **[libepoxy](https://github.com/anholt/libepoxy)** as fallback) — OpenGL ES context and dispatch
 - **[Cairo](https://www.cairographics.org/)** — 2D graphics surface used for text and SVG rasterization
 - **[Pango](https://pango.gnome.org/)** / **PangoCairo** — Text layout and shaping
+- **[HarfBuzz](https://harfbuzz.github.io/)** — OpenType font metrics used for stable text alignment
 - **[FreeType](https://freetype.org/)** — Font rasterization
 - **[Fontconfig](https://www.fontconfig.org/)** — Font discovery
 - **[librsvg](https://wiki.gnome.org/Projects/LibRsvg)** — SVG rendering (filters, clipPaths, masks)

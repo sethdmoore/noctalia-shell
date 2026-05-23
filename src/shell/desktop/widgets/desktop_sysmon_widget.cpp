@@ -78,7 +78,7 @@ void DesktopSysmonWidget::create() {
 
   if (m_showLabel) {
     auto label = std::make_unique<Label>();
-    label->setBold(true);
+    label->setFontWeight(FontWeight::Bold);
     if (m_shadow) {
       label->setShadow(Color{0.0f, 0.0f, 0.0f, 0.5f}, 0.0f, 1.0f);
     }

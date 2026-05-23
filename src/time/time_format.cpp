@@ -40,9 +40,9 @@ namespace {
       const std::time_t rawTime = std::chrono::system_clock::to_time_t(*calendarAfterSixDays);
       std::tm localTime{};
       localtime_r(&rawTime, &localTime);
-      char buffer[32];
-      std::strftime(buffer, sizeof(buffer), "%b %e", &localTime);
-      return buffer;
+      if (const std::string date = formatStrftime("%b %e", localTime); !date.empty()) {
+        return date;
+      }
     }
     const long days = static_cast<long>(secs / 86400);
     return i18n::trp("time.relative.days-ago", days);
@@ -72,28 +72,12 @@ namespace {
             (fmt.find('{') == std::string_view::npos || fmt.find("{:") != std::string_view::npos));
   }
 
-  std::string strftimeSpec(std::string_view spec, const std::tm& local) {
-    std::string fmt(spec);
-    std::size_t size = std::max<std::size_t>(64, fmt.size() * 4 + 16);
-    for (int attempt = 0; attempt < 4; ++attempt) {
-      std::string buffer(size, '\0');
-      std::tm copy = local;
-      const std::size_t written = std::strftime(buffer.data(), buffer.size(), fmt.c_str(), &copy);
-      if (written > 0 || fmt.empty()) {
-        buffer.resize(written);
-        return buffer;
-      }
-      size *= 2;
-    }
-    return {};
-  }
-
   std::optional<std::string> formatStrftimeCompat(std::string_view fmt, const std::tm& local) {
     if (!shouldUseStrftimeCompat(fmt)) {
       return std::nullopt;
     }
     if (fmt.find('{') == std::string_view::npos) {
-      return strftimeSpec(fmt, local);
+      return formatStrftime(fmt, local);
     }
 
     std::string out;
@@ -130,7 +114,7 @@ namespace {
         return std::nullopt;
       }
       spec.remove_prefix(firstPercent);
-      out += strftimeSpec(spec, local);
+      out += formatStrftime(spec, local);
       formattedField = true;
       i = end + 1;
     }
@@ -197,6 +181,22 @@ std::string formatIsoTime(std::string_view isoTime, const char* fmt) {
   }
 }
 
+std::string formatStrftime(std::string_view fmt, const std::tm& tm) {
+  std::string spec(fmt);
+  std::size_t size = std::max<std::size_t>(64, spec.size() * 4 + 16);
+  for (int attempt = 0; attempt < 6; ++attempt) {
+    std::string buffer(size, '\0');
+    std::tm copy = tm;
+    const std::size_t written = std::strftime(buffer.data(), buffer.size(), spec.c_str(), &copy);
+    if (written > 0 || spec.empty()) {
+      buffer.resize(written);
+      return buffer;
+    }
+    size *= 2;
+  }
+  return {};
+}
+
 int localeFirstDayOfWeek() {
 #if defined(_NL_TIME_WEEK_1STDAY)
   constexpr nl_item kWeekFirstDayItem = _NL_TIME_WEEK_1STDAY;
@@ -225,10 +225,9 @@ std::string formatCurrentDate() {
     pos += 2;
   }
   const std::time_t now = std::time(nullptr);
-  const std::tm local = *std::localtime(&now);
-  char buf[64]{};
-  std::strftime(buf, sizeof(buf), fmt.c_str(), &local);
-  return std::string(buf);
+  std::tm local{};
+  localtime_r(&now, &local);
+  return formatStrftime(fmt, local);
 }
 
 std::string formatClockTime(std::int64_t seconds) {
@@ -255,11 +254,11 @@ std::string formatFileTime(const std::filesystem::file_time_type& time) {
   const std::time_t value = std::chrono::system_clock::to_time_t(systemTime);
   std::tm tm{};
   localtime_r(&value, &tm);
-  char buf[32];
-  if (std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", &tm) == 0) {
+  const std::string formatted = formatStrftime("%Y-%m-%d %H:%M", tm);
+  if (formatted.empty()) {
     return i18n::tr("time.file.unknown");
   }
-  return buf;
+  return formatted;
 }
 
 std::string formatTimeAgo(std::chrono::system_clock::time_point tp) {

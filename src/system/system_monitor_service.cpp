@@ -116,7 +116,10 @@ namespace {
     return reading.totalBytes > 0 && reading.usedBytes <= reading.totalBytes;
   }
 
-  [[nodiscard]] float clampPollSeconds(float seconds) noexcept { return std::clamp(seconds, 0.1f, 120.0f); }
+  [[nodiscard]] float clampPollSeconds(float seconds) noexcept {
+    return std::clamp(seconds, SystemConfig::MonitorConfig::kMinPollSeconds,
+                      SystemConfig::MonitorConfig::kMaxPollSeconds);
+  }
 
   // Graph history snapshots and scroll timing follow the fastest metric poll so users
   // only configure how often each stat is read, not a separate graph-only cadence.

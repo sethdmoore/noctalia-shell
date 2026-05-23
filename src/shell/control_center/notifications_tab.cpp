@@ -134,8 +134,8 @@ namespace {
     return resolved.empty() ? std::string() : resolved;
   }
 
-  void applyNotificationCardStyle(Flex& card, float scale, float fillOpacity) {
-    applySectionCardStyle(card, scale, fillOpacity);
+  void applyNotificationCardStyle(Flex& card, float scale, float fillOpacity, bool showBorder) {
+    applySectionCardStyle(card, scale, fillOpacity, showBorder);
   }
 
   std::string relativeMetaLine(const Notification& n) {
@@ -182,23 +182,23 @@ namespace {
     return !isToday && !isYesterday;
   }
 
-  float measuredTextHeight(Renderer& renderer, std::string_view text, float fontSize, bool bold, float maxWidth,
-                           int maxLines) {
+  float measuredTextHeight(Renderer& renderer, std::string_view text, float fontSize, FontWeight fontWeight,
+                           float maxWidth, int maxLines) {
     if (text.empty()) {
       return 0.0f;
     }
-    const auto bounds = renderer.measureText(text, fontSize, bold, maxWidth, maxLines);
+    const auto bounds = renderer.measureText(text, fontSize, fontWeight, maxWidth, maxLines);
     return std::max(0.0f, bounds.bottom - bounds.top);
   }
 
-  bool canExpandText(Renderer& renderer, std::string_view text, float fontSize, bool bold, float maxWidth,
+  bool canExpandText(Renderer& renderer, std::string_view text, float fontSize, FontWeight fontWeight, float maxWidth,
                      int collapsedMaxLines) {
     if (text.empty()) {
       return false;
     }
 
-    const float collapsedHeight = measuredTextHeight(renderer, text, fontSize, bold, maxWidth, collapsedMaxLines);
-    const float expandedHeight = measuredTextHeight(renderer, text, fontSize, bold, maxWidth, kExpandedMaxLines);
+    const float collapsedHeight = measuredTextHeight(renderer, text, fontSize, fontWeight, maxWidth, collapsedMaxLines);
+    const float expandedHeight = measuredTextHeight(renderer, text, fontSize, fontWeight, maxWidth, kExpandedMaxLines);
     return expandedHeight > collapsedHeight + 0.5f;
   }
 
@@ -226,12 +226,13 @@ namespace {
     const std::string bodyText = StringUtils::trimLeadingBlankLines(entry.notification.body);
     metrics.summaryText = summaryText;
 
-    const bool summaryExpandable = canExpandText(renderer, summaryText, Style::fontSizeBody * scale, true,
+    const bool summaryExpandable = canExpandText(renderer, summaryText, Style::fontSizeBody * scale, FontWeight::Bold,
                                                  metrics.cardTextWidth, kSummaryMaxLines);
     bool bodyLineTruncated = false;
     const std::string collapsedBodyText = StringUtils::truncateByLines(bodyText, kBodyMaxLines, &bodyLineTruncated);
-    const bool bodyExpandable = bodyLineTruncated || canExpandText(renderer, bodyText, Style::fontSizeCaption * scale,
-                                                                   false, metrics.cardTextWidth, kBodyMaxLines);
+    const bool bodyExpandable =
+        bodyLineTruncated || canExpandText(renderer, bodyText, Style::fontSizeCaption * scale, FontWeight::Normal,
+                                           metrics.cardTextWidth, kBodyMaxLines);
     metrics.canExpand = summaryExpandable || bodyExpandable;
     metrics.expanded = metrics.canExpand && expandedRequested;
     metrics.bodyText = metrics.expanded ? bodyText : collapsedBodyText;
@@ -247,16 +248,16 @@ namespace {
 
     metrics.metaLine = entry.notification.appName + " • " + relativeMetaLine(entry.notification);
 
-    const float metaHeight =
-        measuredTextHeight(renderer, metrics.metaLine, Style::fontSizeCaption * scale, false, metrics.metaTextWidth, 0);
+    const float metaHeight = measuredTextHeight(renderer, metrics.metaLine, Style::fontSizeCaption * scale,
+                                                FontWeight::Normal, metrics.metaTextWidth, 0);
     const float headerHeight = std::max({iconPx, actionButtonSize, metaHeight});
     const float summaryHeight =
-        measuredTextHeight(renderer, metrics.summaryText, Style::fontSizeBody * scale, true, metrics.cardTextWidth,
-                           metrics.expanded ? kExpandedMaxLines : kSummaryMaxLines);
+        measuredTextHeight(renderer, metrics.summaryText, Style::fontSizeBody * scale, FontWeight::Bold,
+                           metrics.cardTextWidth, metrics.expanded ? kExpandedMaxLines : kSummaryMaxLines);
     const float bodyHeight =
         metrics.bodyText.empty()
             ? 0.0f
-            : measuredTextHeight(renderer, metrics.bodyText, Style::fontSizeCaption * scale, false,
+            : measuredTextHeight(renderer, metrics.bodyText, Style::fontSizeCaption * scale, FontWeight::Normal,
                                  metrics.cardTextWidth, metrics.expanded ? kExpandedMaxLines : kBodyMaxLines);
 
     const float actionsRowHeight =
@@ -290,8 +291,8 @@ namespace {
 
   class NotificationHistoryRow final : public Flex {
   public:
-    explicit NotificationHistoryRow(float scale, float fillOpacity) : m_scale(scale) {
-      applyNotificationCardStyle(*this, scale, fillOpacity);
+    explicit NotificationHistoryRow(float scale, float fillOpacity, bool showBorder) : m_scale(scale) {
+      applyNotificationCardStyle(*this, scale, fillOpacity, showBorder);
       setFillWidth(true);
 
       auto header = std::make_unique<Flex>();
@@ -339,7 +340,7 @@ namespace {
       m_dismiss = static_cast<Button*>(m_headerActions->addChild(makeActionButton("trash", scale)));
 
       auto summary = std::make_unique<Label>();
-      summary->setBold(true);
+      summary->setFontWeight(FontWeight::Bold);
       summary->setFontSize(Style::fontSizeBody * scale);
       m_summary = static_cast<Label*>(addChild(std::move(summary)));
 
@@ -542,8 +543,8 @@ namespace {
 
 class NotificationHistoryAdapter final : public VirtualListAdapter {
 public:
-  NotificationHistoryAdapter(NotificationsTab& owner, float scale, float fillOpacity)
-      : m_owner(owner), m_scale(scale), m_fillOpacity(fillOpacity) {}
+  NotificationHistoryAdapter(NotificationsTab& owner, float scale, float fillOpacity, bool showBorder)
+      : m_owner(owner), m_scale(scale), m_fillOpacity(fillOpacity), m_showBorder(showBorder) {}
 
   [[nodiscard]] std::size_t itemCount() const override { return m_owner.m_filtered.size(); }
 
@@ -577,7 +578,7 @@ public:
   }
 
   [[nodiscard]] std::unique_ptr<Node> createItem() override {
-    return std::make_unique<NotificationHistoryRow>(m_scale, m_fillOpacity);
+    return std::make_unique<NotificationHistoryRow>(m_scale, m_fillOpacity, m_showBorder);
   }
 
   void bindItem(Renderer& renderer, Node& item, std::size_t index, float width, bool /*hovered*/) override {
@@ -602,6 +603,7 @@ private:
   NotificationsTab& m_owner;
   float m_scale = 1.0f;
   float m_fillOpacity = 1.0f;
+  bool m_showBorder = false;
 };
 
 NotificationsTab::NotificationsTab(NotificationManager* notifications) : m_notifications(notifications) {}
@@ -636,7 +638,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
   m_filter = filter.get();
   tab->addChild(std::move(filter));
 
-  m_adapter = std::make_unique<NotificationHistoryAdapter>(*this, scale, panelCardOpacity());
+  m_adapter = std::make_unique<NotificationHistoryAdapter>(*this, scale, panelCardOpacity(), panelBordersEnabled());
 
   auto list = std::make_unique<VirtualListView>();
   list->setFlexGrow(1.0f);
@@ -648,7 +650,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
   m_list = static_cast<VirtualListView*>(tab->addChild(std::move(list)));
 
   auto empty = std::make_unique<Flex>();
-  applyNotificationCardStyle(*empty, scale, panelCardOpacity());
+  applyNotificationCardStyle(*empty, scale, panelCardOpacity(), panelBordersEnabled());
   empty->setAlign(FlexAlign::Center);
   empty->setGap(Style::spaceSm * scale);
   empty->setPadding(Style::spaceLg * scale, Style::spaceMd * scale);
@@ -656,7 +658,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
   m_emptyCard = empty.get();
 
   auto title = std::make_unique<Label>();
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeBody * scale);
   title->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_emptyTitle = static_cast<Label*>(empty->addChild(std::move(title)));

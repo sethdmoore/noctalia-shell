@@ -24,6 +24,7 @@ namespace {
 
   constexpr auto kShowDelay = std::chrono::milliseconds(500);
   constexpr float kMaxContentWidth = 280.0f;
+  constexpr int kMaxTextLines = 3;
   constexpr float kPadH = Style::spaceMd;
   constexpr float kPadV = Style::spaceSm;
   constexpr float kTableGap = Style::spaceXs;
@@ -198,7 +199,8 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
   }
 
   if (const auto* text = std::get_if<std::string>(&content)) {
-    auto metrics = m_renderContext->measureText(*text, Style::fontSizeCaption, false, kMaxContentWidth);
+    auto metrics = m_renderContext->measureText(*text, Style::fontSizeCaption, FontWeight::Normal, kMaxContentWidth,
+                                                kMaxTextLines);
     auto w = static_cast<std::uint32_t>(std::ceil(metrics.width + kPadH * 2.0f + kBorder * 2.0f));
     auto h = static_cast<std::uint32_t>(std::ceil((metrics.bottom - metrics.top) + kPadV * 2.0f + kBorder * 2.0f));
     return {std::max(w, 1u), std::max(h, 1u)};
@@ -256,6 +258,7 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h)
     label->setFontSize(Style::fontSizeCaption);
     label->setColor(colorSpecFromRole(ColorRole::OnSurface));
     label->setMaxWidth(kMaxContentWidth);
+    label->setMaxLines(kMaxTextLines);
     label->setText(*text);
     label->measure(*m_renderContext);
     label->setPosition(kPadH + kBorder, kPadV + kBorder);

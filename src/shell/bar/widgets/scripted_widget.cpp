@@ -181,6 +181,7 @@ void ScriptedWidget::create() {
 
   auto label = std::make_unique<Label>();
   label->setFontSize(Style::fontSizeBody * m_contentScale);
+  label->setFontWeight(labelFontWeight());
   label->setVisible(false);
   m_label = label.get();
 
@@ -243,6 +244,7 @@ void ScriptedWidget::doLayout(Renderer& renderer, float containerWidth, float co
   }
 
   m_label->setColor(resolveScriptColor(m_textColor));
+  m_label->setFontWeight(labelFontWeight());
   m_label->setVisible(!m_label->text().empty());
   if (m_label->visible()) {
     m_label->measure(renderer);

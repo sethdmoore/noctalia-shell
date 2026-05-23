@@ -130,7 +130,7 @@ namespace {
 
       auto alias = std::make_unique<Label>();
       alias->setText(m_device.alias);
-      alias->setBold(m_device.connected);
+      alias->setFontWeight(m_device.connected ? FontWeight::Bold : FontWeight::Normal);
       alias->setFontSize(Style::fontSizeBody * scale);
       alias->setColor(colorSpecFromRole(ColorRole::OnSurface));
       alias->setFlexGrow(1.0f);
@@ -277,12 +277,12 @@ std::unique_ptr<Flex> BluetoothTab::create() {
   m_rootLayout = tab.get();
 
   auto pairingCard = std::make_unique<Flex>();
-  applySectionCardStyle(*pairingCard, scale, panelCardOpacity());
+  applySectionCardStyle(*pairingCard, scale, panelCardOpacity(), panelBordersEnabled());
   pairingCard->setVisible(false);
   m_pairingCard = pairingCard.get();
 
   auto pairingTitle = std::make_unique<Label>();
-  pairingTitle->setBold(true);
+  pairingTitle->setFontWeight(FontWeight::Bold);
   pairingTitle->setFontSize(Style::fontSizeBody * scale);
   pairingTitle->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_pairingTitle = pairingTitle.get();
@@ -296,7 +296,7 @@ std::unique_ptr<Flex> BluetoothTab::create() {
   pairingCard->addChild(std::move(pairingDetail));
 
   auto pairingCode = std::make_unique<Label>();
-  pairingCode->setBold(true);
+  pairingCode->setFontWeight(FontWeight::Bold);
   pairingCode->setFontSize(Style::fontSizeTitle * scale);
   pairingCode->setColor(colorSpecFromRole(ColorRole::Primary));
   m_pairingCode = pairingCode.get();
@@ -392,7 +392,7 @@ std::unique_ptr<Flex> BluetoothTab::create() {
   tab->addChild(std::move(pairingCard));
 
   auto listCard = std::make_unique<Flex>();
-  applySectionCardStyle(*listCard, scale, panelCardOpacity());
+  applySectionCardStyle(*listCard, scale, panelCardOpacity(), panelBordersEnabled());
   listCard->setFlexGrow(1.0f);
   m_listCard = listCard.get();
 
@@ -787,7 +787,7 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
       auto header = std::make_unique<Label>();
       header->setText(sectionText);
       header->setCaptionStyle();
-      header->setBold(true);
+      header->setFontWeight(FontWeight::Bold);
       header->setFontSize(Style::fontSizeCaption * scale);
       header->setColor(colorSpecFromRole(ColorRole::Secondary));
       m_list->addChild(std::move(header));

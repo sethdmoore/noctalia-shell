@@ -47,7 +47,7 @@ void TestPanel::create() {
 
   auto header = std::make_unique<Label>();
   header->setText("Test");
-  header->setBold(true);
+  header->setFontWeight(FontWeight::Bold);
   header->setFontSize(Style::fontSizeTitle * scale);
   header->setColor(colorSpecFromRole(ColorRole::Primary));
   m_headerLabel = header.get();
@@ -632,7 +632,7 @@ void TestPanel::create() {
         tile->setFill(colorSpecFromRole(ColorRole::Primary));
         tile->setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth);
       } else {
-        tile->setCardStyle(scale, panelCardOpacity());
+        tile->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
         tile->setRadius(Style::scaledRadiusMd(scale));
       }
 
@@ -792,7 +792,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   {
     auto heading = std::make_unique<Label>();
     heading->setText("Text Lab");
-    heading->setBold(true);
+    heading->setFontWeight(FontWeight::Bold);
     heading->setFontSize(Style::fontSizeHeader * scale);
     heading->setColor(colorSpecFromRole(ColorRole::Primary));
     section->addChild(std::move(heading));
@@ -870,13 +870,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Size ladder (glyph + text, regular & bold)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -921,7 +921,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
       auto bold = std::make_unique<Label>();
       bold->setText(kSample);
-      bold->setBold(true);
+      bold->setFontWeight(FontWeight::Bold);
       bold->setFontSize(s.size * scale);
       row->addChild(std::move(bold));
 
@@ -938,13 +938,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Glyph + body text alignment (varying glyph size)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -986,13 +986,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Repeat-row jitter probe (identical text repeated)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1022,20 +1022,20 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     section->addChild(std::move(col));
   }
 
-  // ── Baseline mode test (cap-only ↔ descender swap). Stable mode should pin
-  // ── the baseline; ink-centered mode may shift "Apr" relative to "MAR".
+  // ── Baseline mode test (cap-only ↔ descender swap). Latin optical mode
+  // ── logical mode follows Pango metrics; ink-centered mode follows visible ink.
   {
     auto col = std::make_unique<Flex>();
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
-    title->setText("Baseline mode (stable vs ink-centered)");
-    title->setBold(true);
+    title->setText("Baseline mode (logical vs ink-centered)");
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1073,7 +1073,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     toggleRow->setGap(Style::spaceSm * scale);
 
     auto toggleLabel = std::make_unique<Label>();
-    toggleLabel->setText("first label stable:");
+    toggleLabel->setText("first label ink centered:");
     toggleLabel->setCaptionStyle();
     toggleLabel->setFontSize(Style::fontSizeCaption * scale);
     toggleRow->addChild(std::move(toggleLabel));
@@ -1081,10 +1081,11 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     auto toggle = std::make_unique<Toggle>();
     toggle->setToggleSize(ToggleSize::Small);
     toggle->setScale(scale);
-    toggle->setChecked(true);
+    toggle->setChecked(false);
     toggle->setOnChange([this](bool checked) {
       if (m_baselineModeLabel != nullptr) {
-        m_baselineModeLabel->setBaselineMode(checked ? LabelBaselineMode::Stable : LabelBaselineMode::InkCentered);
+        m_baselineModeLabel->setBaselineMode(checked ? LabelBaselineMode::InkCentered
+                                                     : LabelBaselineMode::StableLogical);
       }
     });
     m_baselineModeToggle = toggle.get();
@@ -1096,6 +1097,69 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     section->addChild(std::move(col));
   }
 
+  // ── Nerd Font / PUA glyph rendering test. These codepoints live in the
+  // ── Unicode Private Use Area and require a Nerd Font for coverage.
+  {
+    auto col = std::make_unique<Flex>();
+    col->setDirection(FlexDirection::Vertical);
+    col->setAlign(FlexAlign::Start);
+    col->setGap(Style::spaceSm * scale);
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
+    col->setRadius(Style::scaledRadiusLg(scale));
+    col->setPadding(Style::spaceMd * scale);
+
+    auto title = std::make_unique<Label>();
+    title->setText("Nerd Font symbols (requires a Nerd Font installed)");
+    title->setFontWeight(FontWeight::Bold);
+    title->setFontSize(Style::fontSizeBody * scale);
+    col->addChild(std::move(title));
+
+    struct NerdSpec {
+      const char* codepoint;
+      const char* symbol;
+    };
+    const NerdSpec symbols[] = {
+        {"U+E612 nf-seti-folder", "\xee\x98\x92"}, {"U+E615 nf-seti-home", "\xee\x98\x95"},
+        {"U+F001 nf-fa-music", "\xef\x80\x81"},    {"U+F008 nf-fa-film", "\xef\x80\x88"},
+        {"U+F013 nf-fa-cog", "\xef\x80\x93"},      {"U+F015 nf-fa-home", "\xef\x80\x95"},
+        {"U+F0E0 nf-fa-envelope", "\xef\x83\xa0"}, {"U+F120 nf-fa-terminal", "\xef\x84\xa0"},
+        {"U+F1D3 nf-fa-git", "\xef\x87\x93"},      {"U+F268 nf-fa-chrome", "\xef\x89\xa8"},
+        {"U+F308 nf-linux-tux", "\xef\x8c\x88"},   {"U+F489 nf-oct-terminal", "\xef\x92\x89"},
+    };
+
+    for (const auto& s : symbols) {
+      auto row = std::make_unique<Flex>();
+      row->setDirection(FlexDirection::Horizontal);
+      row->setAlign(FlexAlign::Center);
+      row->setGap(Style::spaceMd * scale);
+
+      auto tag = std::make_unique<Label>();
+      tag->setText(s.codepoint);
+      tag->setFontSize(Style::fontSizeCaption * scale);
+      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      tag->setMinWidth(200.0f * scale);
+      row->addChild(std::move(tag));
+
+      const float sizes[] = {Style::fontSizeMini, Style::fontSizeBody, Style::fontSizeTitle, Style::fontSizeHeader};
+      for (float fs : sizes) {
+        auto lbl = std::make_unique<Label>();
+        lbl->setText(s.symbol);
+        lbl->setFontSize(fs * scale);
+        lbl->setColor(colorSpecFromRole(ColorRole::OnSurface));
+        row->addChild(std::move(lbl));
+      }
+
+      auto mixed = std::make_unique<Label>();
+      mixed->setText(std::string(s.symbol) + " inline text");
+      mixed->setFontSize(Style::fontSizeBody * scale);
+      row->addChild(std::move(mixed));
+
+      col->addChild(std::move(row));
+    }
+
+    section->addChild(std::move(col));
+  }
+
   // ── Elision and wrapping tests at body font size. Each row is
   // ── identical text inside boxes of decreasing width.
   {
@@ -1103,13 +1167,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Elision (single line, decreasing maxWidth)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1160,13 +1224,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Text alignment (Start / Center / End × short / medium / long)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1233,13 +1297,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Wrapping (maxWidth=320, maxLines=1..4)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1279,13 +1343,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Bar-style capsules (controlHeight rows, mixed icons)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1339,13 +1403,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Mixed sizes inline (centered cross-axis)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1373,13 +1437,13 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
     title->setText("Auto-scroll (marquee)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 

@@ -179,7 +179,7 @@ namespace {
 
       auto title = std::make_unique<Label>();
       title->setFontSize(Style::fontSizeBody * scale);
-      title->setBold(true);
+      title->setFontWeight(FontWeight::Bold);
       title->setMaxLines(1);
       title->setHitTestVisible(false);
       m_title = static_cast<Label*>(m_textColumn->addChild(std::move(title)));
@@ -446,7 +446,7 @@ void ClipboardPanel::create() {
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("clipboard.title"));
   title->setFontSize(Style::fontSizeTitle * scale);
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setColor(colorSpecFromRole(ColorRole::Primary));
   m_sidebarTitle = title.get();
   sidebarHeader->addChild(std::move(title));
@@ -530,7 +530,7 @@ void ClipboardPanel::create() {
   auto previewTitleLabel = std::make_unique<Label>();
   previewTitleLabel->setText(i18n::tr("clipboard.entry.title"));
   previewTitleLabel->setFontSize(Style::fontSizeTitle * scale);
-  previewTitleLabel->setBold(true);
+  previewTitleLabel->setFontWeight(FontWeight::Bold);
   previewTitleLabel->setColor(colorSpecFromRole(ColorRole::Primary));
   m_previewTitle = previewTitleLabel.get();
   previewTitleLabel->setFlexGrow(1.0f);
@@ -610,7 +610,7 @@ void ClipboardPanel::create() {
 
   auto previewScroll = std::make_unique<ScrollView>();
   previewScroll->setScrollbarVisible(true);
-  previewScroll->setCardStyle(scale, panelCardOpacity());
+  previewScroll->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
   previewScroll->setFlexGrow(1.0f);
   m_previewScrollView = previewScroll.get();
   m_previewContent = previewScroll->content();
@@ -811,7 +811,7 @@ void ClipboardPanel::onPanelCardOpacityChanged(float opacity) {
     panel_button_style::applyHeaderButtonStyle(*m_closeButton, opacity);
   }
   if (m_previewScrollView != nullptr) {
-    m_previewScrollView->setCardStyle(contentScale(), opacity);
+    m_previewScrollView->setCardStyle(contentScale(), opacity, panelBordersEnabled());
   }
 }
 
@@ -928,8 +928,7 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
   const std::size_t historyIndex = selectedHistoryIndex();
   if (history.empty() || historyIndex == static_cast<std::size_t>(-1)) {
     m_previewTitle->setText(i18n::tr("clipboard.entry.title"));
-    m_previewMeta->setText(history.empty() ? i18n::tr("clipboard.empty.history-message")
-                                           : i18n::tr("clipboard.empty.no-matches-title"));
+    m_previewMeta->setText("");
 
     auto empty = std::make_unique<Label>();
     empty->setText(history.empty() ? i18n::tr("clipboard.empty.history-message")

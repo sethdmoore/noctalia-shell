@@ -120,6 +120,18 @@ void LayerSurface::setMargins(std::int32_t top, std::int32_t right, std::int32_t
   wl_surface_commit(m_surface);
 }
 
+void LayerSurface::setExclusiveZone(std::int32_t exclusiveZone) {
+  if (m_config.exclusiveZone == exclusiveZone) {
+    return;
+  }
+  m_config.exclusiveZone = exclusiveZone;
+  if (m_layerSurface == nullptr || m_surface == nullptr) {
+    return;
+  }
+  zwlr_layer_surface_v1_set_exclusive_zone(m_layerSurface, exclusiveZone);
+  wl_surface_commit(m_surface);
+}
+
 void LayerSurface::setKeyboardInteractivity(LayerShellKeyboard mode) {
   if (m_config.keyboard == mode) {
     return;

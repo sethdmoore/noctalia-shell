@@ -63,8 +63,8 @@ namespace {
     return formatLocalTime(format);
   }
 
-  void applyHomeCardStyle(Flex& card, float scale, float fillOpacity) {
-    applySectionCardStyle(card, scale, fillOpacity);
+  void applyHomeCardStyle(Flex& card, float scale, float fillOpacity, bool showBorder) {
+    applySectionCardStyle(card, scale, fillOpacity, showBorder);
     card.setGap(Style::spaceSm * scale);
   }
 
@@ -148,7 +148,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   // --- User card ---
   auto userCard = std::make_unique<Flex>();
-  applyHomeCardStyle(*userCard, scale, panelCardOpacity());
+  applyHomeCardStyle(*userCard, scale, panelCardOpacity(), panelBordersEnabled());
   userCard->setFlexGrow(1.0f);
   userCard->setFillHeight(true);
   userCard->setJustify(FlexJustify::Center);
@@ -197,7 +197,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   auto userTitle = std::make_unique<Label>();
   userTitle->setText(displayName);
-  userTitle->setBold(true);
+  userTitle->setFontWeight(FontWeight::Bold);
   userTitle->setFontSize(Style::fontSizeTitle * 1.12f * scale);
   userTitle->setColor(colorSpecFromRole(ColorRole::OnSurface));
   userTitle->setShadow(Color{0.0f, 0.0f, 0.0f, 0.42f}, 0.0f, 1.0f * scale);
@@ -247,7 +247,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   // --- Media (top of left column) ---
   auto mediaCard = std::make_unique<Flex>();
-  applyHomeCardStyle(*mediaCard, scale, panelCardOpacity());
+  applyHomeCardStyle(*mediaCard, scale, panelCardOpacity(), panelBordersEnabled());
   mediaCard->setFillWidth(true);
   mediaCard->setFillHeight(true);
   mediaCard->setFlexGrow(1.4f);
@@ -341,7 +341,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   // --- Date/Time + Weather (below media) ---
   auto dateTimeCard = std::make_unique<Flex>();
-  applyHomeCardStyle(*dateTimeCard, scale, panelCardOpacity());
+  applyHomeCardStyle(*dateTimeCard, scale, panelCardOpacity(), panelBordersEnabled());
   dateTimeCard->setDirection(FlexDirection::Horizontal);
   dateTimeCard->setAlign(FlexAlign::Center);
   dateTimeCard->setJustify(FlexJustify::Center);
@@ -353,7 +353,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   auto timeLabel = std::make_unique<Label>();
   timeLabel->setText(formatShellTime(m_config));
-  timeLabel->setBold(true);
+  timeLabel->setFontWeight(FontWeight::Bold);
   timeLabel->setFontSize(Style::fontSizeTitle * 1.7f * scale);
   timeLabel->setColor(colorSpecFromRole(ColorRole::Primary));
   m_timeLabel = timeLabel.get();

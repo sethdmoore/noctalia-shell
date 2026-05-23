@@ -44,6 +44,7 @@ public:
   [[nodiscard]] std::unordered_map<std::uintptr_t, WorkspaceWindow>
   assignTaskbarWindows(const std::vector<TaskbarWindowCandidate>& windows, wl_output* output) const;
   [[nodiscard]] std::vector<WorkspaceWindow> workspaceWindows(wl_output* output) const;
+  void focusWindow(const std::string& windowId) const;
 
   [[nodiscard]] std::vector<Workspace> all() const;
   [[nodiscard]] std::vector<Workspace> forOutput(wl_output* output) const;
@@ -51,6 +52,7 @@ public:
   [[nodiscard]] wl_output* dwlIpcSelectedOutput() const;
 
   [[nodiscard]] std::optional<std::pair<std::string, std::string>> dwlIpcFocusedClientOnOutput(wl_output* output) const;
+  [[nodiscard]] std::optional<std::string> focusedWindowId() const;
 
 private:
   void setActiveBackend(WorkspaceBackend* backend);

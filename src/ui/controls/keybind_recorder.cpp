@@ -121,6 +121,8 @@ void KeybindRecorder::setRecordingPlaceholder(std::string_view text) {
 
 void KeybindRecorder::setOnCommit(std::function<void(KeyChord)> callback) { m_onCommit = std::move(callback); }
 
+void KeybindRecorder::setModifierPolicy(ModifierPolicy policy) { m_modifierPolicy = policy; }
+
 void KeybindRecorder::doLayout(Renderer& renderer) {
   if (m_label != nullptr) {
     m_label->measure(renderer);
@@ -155,14 +157,39 @@ void KeybindRecorder::handleKeyDown(std::uint32_t sym, std::uint32_t modifiers) 
     return;
   }
 
+  if (m_modifierPolicy == ModifierPolicy::Forbidden && KeySymbol::isModifier(sym)) {
+    notify::error(i18n::tr("notifications.internal.keybind-app"),
+                  i18n::tr("notifications.internal.keybind-invalid-title"),
+                  i18n::tr("notifications.internal.keybind-invalid-modifier"));
+    exitRecording(false);
+    return;
+  }
+
   if (KeySymbol::isModifier(sym)) {
     m_pendingModifiers = modifiers;
     refreshLabel();
     return;
   }
 
-  // Reject bare printable keys (a-z, 0-9, punctuation) without a modifier.
-  if (modifiers == 0 && isPrintableKey(sym)) {
+  if (m_modifierPolicy == ModifierPolicy::Required && modifiers == 0 && isPrintableKey(sym)) {
+    notify::error(i18n::tr("notifications.internal.keybind-app"),
+                  i18n::tr("notifications.internal.keybind-invalid-title"),
+                  i18n::tr("notifications.internal.keybind-invalid-printable"));
+    exitRecording(false);
+    return;
+  }
+
+  if (m_modifierPolicy == ModifierPolicy::Forbidden && modifiers != 0) {
+    notify::error(i18n::tr("notifications.internal.keybind-app"),
+                  i18n::tr("notifications.internal.keybind-invalid-title"),
+                  i18n::tr("notifications.internal.keybind-invalid-modifier"));
+    exitRecording(false);
+    return;
+  }
+
+  // Shift-only + printable is just a character variant (e.g. Shift+l = L),
+  // not a meaningful shortcut. Reject it in both Required and Optional modes.
+  if (modifiers == KeyMod::Shift && isPrintableKey(sym)) {
     notify::error(i18n::tr("notifications.internal.keybind-app"),
                   i18n::tr("notifications.internal.keybind-invalid-title"),
                   i18n::tr("notifications.internal.keybind-invalid-printable"));

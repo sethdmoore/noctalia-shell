@@ -49,6 +49,7 @@ private:
     bool active = false;
     bool urgent = false;
     bool occupied = false;
+    bool hasFocusedClient = false;
   };
 
   struct OutputState {
@@ -72,7 +73,8 @@ private:
   [[nodiscard]] static std::optional<std::size_t> parseTagIndex(const Workspace& workspace);
   [[nodiscard]] static std::optional<std::size_t> parseTagIndex(const std::string& id);
   [[nodiscard]] std::size_t protocolIndexForDisplay(std::size_t displayIndex) const;
-  [[nodiscard]] static Workspace makeWorkspace(std::size_t index, const TagInfo& tag);
+  [[nodiscard]] static Workspace makeWorkspace(std::size_t index, const TagInfo& tag, bool shellActive);
+  [[nodiscard]] std::optional<std::size_t> shellActiveTagIndex(const std::vector<TagInfo>& tags) const;
   [[nodiscard]] std::string summarizeTags(const OutputState& state) const;
   void notifyChanged();
 

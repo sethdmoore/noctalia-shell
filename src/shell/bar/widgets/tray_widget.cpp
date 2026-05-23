@@ -124,10 +124,12 @@ namespace {
 
 TrayWidget::TrayWidget(TrayService* tray, std::vector<std::string> hiddenItems, std::vector<std::string> pinnedItems,
                        bool drawerMode, std::function<void()> itemActivated, std::string barPosition,
-                       bool panelGridMode, std::size_t panelGridColumns)
+                       bool panelGridMode, std::size_t panelGridColumns, float inlineEntryGap,
+                       bool matchAdjacentSpacing)
     : m_tray(tray), m_hiddenItems(std::move(hiddenItems)), m_pinnedItems(std::move(pinnedItems)),
       m_drawerMode(drawerMode), m_itemActivated(std::move(itemActivated)), m_barPosition(std::move(barPosition)),
-      m_panelGridMode(panelGridMode), m_panelGridColumns(std::clamp<std::size_t>(panelGridColumns, 1U, 5U)) {
+      m_panelGridMode(panelGridMode), m_panelGridColumns(std::clamp<std::size_t>(panelGridColumns, 1U, 5U)),
+      m_inlineEntryGap(std::max(0.0f, inlineEntryGap)), m_matchAdjacentSpacing(matchAdjacentSpacing) {
   auto normalizeTokens = [](std::vector<std::string>& tokens) {
     std::vector<std::string> normalized;
     normalized.reserve(tokens.size());
@@ -188,16 +190,27 @@ std::string TrayWidget::resolveFromTrayThemePath(std::string_view themePath, std
   return {};
 }
 
+float TrayWidget::resolvedInlineEntryGap() const {
+  if (!m_matchAdjacentSpacing) {
+    return m_inlineEntryGap;
+  }
+  const auto& cap = barCapsuleSpec();
+  const float pad = cap.enabled ? cap.padding * m_contentScale : 0.0f;
+  return m_inlineEntryGap + 2.0f * pad;
+}
+
 void TrayWidget::create() {
   auto container = std::make_unique<Flex>();
   if (m_panelGridMode) {
     container->setDirection(FlexDirection::Vertical);
     container->setAlign(FlexAlign::Start);
+    container->setGap(Style::spaceXs * m_contentScale);
   } else {
-    container->setRowLayout();
+    container->setDirection(FlexDirection::Horizontal);
     container->setAlign(FlexAlign::Center);
+    container->setJustify(FlexJustify::Start);
+    container->setGap(resolvedInlineEntryGap());
   }
-  container->setGap(Style::spaceXs * m_contentScale);
   m_container = container.get();
 
   setRoot(std::move(container));
@@ -244,7 +257,9 @@ void TrayWidget::doLayout(Renderer& renderer, float containerWidth, float contai
     m_rebuildPending = false;
   }
 
-  m_container->setGap(Style::spaceXs * m_contentScale);
+  if (!m_panelGridMode) {
+    m_container->setGap(resolvedInlineEntryGap());
+  }
   m_container->layout(renderer);
 }
 

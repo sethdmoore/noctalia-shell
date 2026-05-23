@@ -116,7 +116,7 @@ namespace settings {
     titleLabel->setText(m_title);
     titleLabel->setFontSize(Style::fontSizeBody * m_scale);
     titleLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-    titleLabel->setBold(true);
+    titleLabel->setFontWeight(FontWeight::Bold);
     header->addChild(std::move(titleLabel));
 
     auto spacer = std::make_unique<Flex>();

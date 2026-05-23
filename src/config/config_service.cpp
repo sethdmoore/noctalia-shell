@@ -6,6 +6,7 @@
 #include "core/log.h"
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
+#include "render/core/renderer.h"
 #include "util/file_utils.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
@@ -31,11 +32,16 @@
 namespace {
 
   std::optional<double> finiteDouble(const toml::node_view<const toml::node>& node) {
-    auto v = node.value<double>();
-    if (v && !std::isfinite(*v)) {
-      return std::nullopt;
+    if (auto v = node.value<double>()) {
+      if (!std::isfinite(*v)) {
+        return std::nullopt;
+      }
+      return *v;
     }
-    return v;
+    if (auto v = node.value<int64_t>()) {
+      return static_cast<double>(*v);
+    }
+    return std::nullopt;
   }
 
   std::string expandUserPathString(const std::string& path) {
@@ -704,7 +710,7 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
     if (ovr.widgetCapsulePadding) {
       resolved.widgetCapsulePadding = std::clamp(static_cast<float>(*ovr.widgetCapsulePadding), 0.0f, 48.0f);
     }
-    if (ovr.widgetCapsuleRadius) {
+    if (ovr.widgetCapsuleRadius.has_value()) {
       resolved.widgetCapsuleRadius = std::clamp(*ovr.widgetCapsuleRadius, 0.0, 80.0);
     }
     if (ovr.widgetCapsuleOpacity) {
@@ -869,6 +875,16 @@ void ConfigService::seedBuiltinWidgets(Config& config) {
   ram.type = "sysmon";
   ram.settings["stat"] = std::string("ram_used");
   seed("ram", std::move(ram));
+
+  WidgetConfig netTx;
+  netTx.type = "sysmon";
+  netTx.settings["stat"] = std::string("net_tx");
+  seed("network_tx", std::move(netTx));
+
+  WidgetConfig netRx;
+  netRx.type = "sysmon";
+  netRx.settings["stat"] = std::string("net_rx");
+  seed("network_rx", std::move(netRx));
 
   WidgetConfig outputVolume;
   outputVolume.type = "volume";
@@ -1084,6 +1100,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         bar.contactShadow = *v;
       if (auto v = finiteDouble((*barTbl)["scale"]))
         bar.scale = std::clamp(static_cast<float>(*v), 0.5f, 4.0f);
+      if (auto fontWeightValue = (*barTbl)["font_weight"].value<int64_t>()) {
+        bar.fontWeight = static_cast<int>(*fontWeightValue);
+      }
       if (auto* n = (*barTbl)["start"].as_array())
         bar.startWidgets = readStringArray(*n);
       if (auto* n = (*barTbl)["center"].as_array())
@@ -1361,6 +1380,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*panelTbl)["background_blur"].value<bool>()) {
         shell.panel.backgroundBlur = *v;
       }
+      if (auto v = (*panelTbl)["borders"].value<bool>()) {
+        shell.panel.borders = *v;
+      }
+      if (auto v = (*panelTbl)["shadow"].value<bool>()) {
+        shell.panel.shadow = *v;
+      }
       if (auto v = (*panelTbl)["transparency_mode"].value<std::string>()) {
         if (auto parsed = enumFromKey(kPanelTransparencyModes, StringUtils::trim(*v))) {
           shell.panel.transparencyMode = *parsed;
@@ -1500,6 +1525,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
                 row.variant = *parsed;
               } else {
                 kLog.warn("unknown shell.session.actions variant \"{}\"", key);
+              }
+            }
+            if (auto v = (*entryTbl)["shortcut"].value<std::string>()) {
+              const std::string s = StringUtils::trim(*v);
+              if (!s.empty()) {
+                row.shortcut = parseKeyChordSpec(s);
               }
             }
             shell.session.actions.push_back(std::move(row));
@@ -1744,8 +1775,13 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       osd.position = *v;
     if (auto v = (*osdTbl)["orientation"].value<std::string>())
       osd.orientation = *v;
+    if (auto v = finiteDouble((*osdTbl)["scale"])) {
+      osd.scale = std::clamp(static_cast<float>(*v), 0.5f, 2.5f);
+    }
     if (auto v = (*osdTbl)["lock_keys"].value<bool>())
       osd.lockKeys = *v;
+    if (auto v = (*osdTbl)["keyboard_layout"].value<bool>())
+      osd.keyboardLayout = *v;
   }
 
   auto parseNotificationTable = [&config](const toml::table& notifTable) {
@@ -1843,6 +1879,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       dock.launcherIcon = *v;
     if (auto* arr = (*dockTbl)["pinned"].as_array())
       dock.pinned = readStringArray(*arr);
+    if (auto* arr = (*dockTbl)["monitors"].as_array())
+      dock.monitors = readStringArray(*arr);
   }
 
   // Parse [desktop_widgets]

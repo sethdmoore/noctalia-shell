@@ -23,7 +23,6 @@ namespace {
   constexpr float kGraphLineWidth = 0.75f;
   constexpr float kGraphFillOpacity = 0.15f;
   constexpr double kNetMinScaleBps = 10000.0;
-  const auto kSampleInterval = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(1));
 
   Flex* makeHeaderRow(Flex& parent, const std::string& title, float scale) {
     auto row = std::make_unique<Flex>();
@@ -33,7 +32,7 @@ namespace {
 
     auto label = std::make_unique<Label>();
     label->setText(title);
-    label->setBold(true);
+    label->setFontWeight(FontWeight::Bold);
     label->setFontSize(Style::fontSizeTitle * scale);
     label->setColor(colorSpecFromRole(ColorRole::OnSurface));
     label->setFlexGrow(1.0f);
@@ -95,10 +94,10 @@ namespace {
     return FormatUnits::formatBinaryBytesAsGib(*stats.gpuVramUsedBytes);
   }
 
-  Flex* makeInfoCard(Flex& parent, const std::string& title, float scale, float fillOpacity, Label** outLines,
-                     int lineCount, const char* const* glyphs) {
+  Flex* makeInfoCard(Flex& parent, const std::string& title, float scale, float fillOpacity, bool showBorder,
+                     Label** outLines, int lineCount, const char* const* glyphs) {
     auto card = std::make_unique<Flex>();
-    applySectionCardStyle(*card, scale, fillOpacity);
+    applySectionCardStyle(*card, scale, fillOpacity, showBorder);
     card->setFlexGrow(1.0f);
     card->setGap(Style::spaceXs * scale);
 
@@ -171,7 +170,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // CPU card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       m_cpuCard = card.get();
 
@@ -188,7 +187,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // Memory card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       m_ramCard = card.get();
 
@@ -214,7 +213,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // GPU card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       card->setVisible(false);
       m_gpuCard = card.get();
@@ -232,7 +231,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // Network card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       m_netCard = card.get();
 
@@ -257,13 +256,13 @@ std::unique_ptr<Flex> SystemTab::create() {
     row->setGap(Style::spaceSm * sc);
     static constexpr const char* kSystemGlyphs[] = {"device-desktop", "layout-board", "cpu-usage",
                                                     "video",          "app-window",   "clock"};
-    makeInfoCard(*row, i18n::tr("control-center.system.titles.system"), sc, panelCardOpacity(), m_systemLines,
-                 kSystemLines, kSystemGlyphs)
+    makeInfoCard(*row, i18n::tr("control-center.system.titles.system"), sc, panelCardOpacity(), panelBordersEnabled(),
+                 m_systemLines, kSystemLines, kSystemGlyphs)
         ->setFlexGrow(2.0f);
 
     static constexpr const char* kResourcesGlyphs[] = {"activity", "memory", "storage"};
-    makeInfoCard(*row, i18n::tr("control-center.system.titles.resources"), sc, panelCardOpacity(), m_resourcesLines,
-                 kResourcesLines, kResourcesGlyphs);
+    makeInfoCard(*row, i18n::tr("control-center.system.titles.resources"), sc, panelCardOpacity(),
+                 panelBordersEnabled(), m_resourcesLines, kResourcesLines, kResourcesGlyphs);
 
     tab->addChild(std::move(row));
   }
@@ -729,11 +728,18 @@ void SystemTab::syncLabels() {
   }
 }
 
-float SystemTab::scrollProgressForSample(std::chrono::steady_clock::time_point sampledAt) {
+float SystemTab::scrollProgressForSample(std::chrono::steady_clock::time_point sampledAt) const {
   if (sampledAt == std::chrono::steady_clock::time_point{}) {
     return 1.0f;
   }
+
+  const auto sampleInterval = m_monitor != nullptr ? m_monitor->historySampleInterval()
+                                                   : std::chrono::steady_clock::duration{std::chrono::seconds(1)};
+  if (sampleInterval.count() <= 0) {
+    return 1.0f;
+  }
+
   const auto elapsed = std::chrono::steady_clock::now() - sampledAt;
-  const auto clamped = std::clamp(elapsed, std::chrono::steady_clock::duration::zero(), kSampleInterval);
-  return std::chrono::duration<float>(clamped).count() / std::chrono::duration<float>(kSampleInterval).count();
+  const auto clamped = std::clamp(elapsed, std::chrono::steady_clock::duration::zero(), sampleInterval);
+  return std::chrono::duration<float>(clamped).count() / std::chrono::duration<float>(sampleInterval).count();
 }

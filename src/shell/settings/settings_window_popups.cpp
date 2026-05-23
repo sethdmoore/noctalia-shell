@@ -245,7 +245,8 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
     m_widgetAddPopup = std::make_unique<settings::WidgetAddPopup>();
     m_widgetAddPopup->initialize(*m_wayland, *m_config, *m_renderContext);
     m_widgetAddPopup->setOnSelect([this](const std::vector<std::string>& selectedLanePath, const std::string& value,
-                                         const std::string& newInstanceType, const std::string& newInstanceId) {
+                                         const std::string& newInstanceType, const std::string& newInstanceId,
+                                         const std::vector<std::pair<std::string, std::string>>& initialSettings) {
       if (value.empty() || m_config == nullptr) {
         return;
       }
@@ -260,7 +261,14 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
 
       if (!newInstanceType.empty() && !newInstanceId.empty()) {
         laneItems.push_back(newInstanceId);
-        setSettingOverrides({{{"widget", newInstanceId, "type"}, newInstanceType}, {selectedLanePath, laneItems}});
+        std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides = {
+            {{"widget", newInstanceId, "type"}, newInstanceType},
+        };
+        for (const auto& [key, settingValue] : initialSettings) {
+          overrides.push_back({{"widget", newInstanceId, key}, settingValue});
+        }
+        overrides.push_back({selectedLanePath, laneItems});
+        setSettingOverrides(overrides);
         return;
       }
 
@@ -308,7 +316,13 @@ void SettingsWindow::openSearchPickerPopup(const std::string& title, const std::
   pickerOptions.reserve(options.size());
   for (const auto& opt : options) {
     pickerOptions.push_back(SearchPickerOption{
-        .value = opt.value, .label = opt.label, .description = opt.description, .enabled = true, .icon = {}});
+        .value = opt.value,
+        .label = opt.label,
+        .description = opt.description,
+        .enabled = true,
+        .icon = {},
+        .preview = opt.preview,
+    });
   }
 
   wl_output* output = m_wayland->lastPointerOutput();

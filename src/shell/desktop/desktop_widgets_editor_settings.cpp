@@ -334,7 +334,7 @@ namespace {
 
     auto heading = std::make_unique<Label>();
     heading->setText(i18n::tr(labelKey));
-    heading->setBold(true);
+    heading->setFontWeight(FontWeight::Bold);
     heading->setFontSize(Style::fontSizeCaption);
     heading->setColor(colorSpecFromRole(ColorRole::Secondary));
     content.addChild(std::move(heading));
@@ -468,7 +468,7 @@ void DesktopWidgetsEditor::buildInspector(OverlaySurface& surface, Node& root,
 
   auto handleTitle = std::make_unique<Label>();
   handleTitle->setText(i18n::tr("desktop-widgets.editor.settings.title"));
-  handleTitle->setBold(true);
+  handleTitle->setFontWeight(FontWeight::Bold);
   handleTitle->setFontSize(Style::fontSizeBody);
   handle->addChild(std::move(handleTitle));
 

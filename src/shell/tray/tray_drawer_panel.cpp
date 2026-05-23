@@ -4,9 +4,9 @@
 #include "shell/bar/widgets/tray_widget.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/tray/tray_identifier.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <vector>
 
 TrayDrawerPanel::TrayDrawerPanel(TrayService* tray, ConfigService* config, std::size_t drawerColumns)
@@ -81,20 +81,15 @@ std::size_t TrayDrawerPanel::visibleItemCount() const {
   }
   const auto hiddenItems = currentHiddenItems();
   const auto pinnedItems = currentPinnedItems();
-  auto toLower = [](std::string value) {
-    std::transform(value.begin(), value.end(), value.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return value;
-  };
   std::vector<std::string> hiddenLower;
   hiddenLower.reserve(hiddenItems.size());
   for (const auto& v : hiddenItems) {
-    hiddenLower.push_back(toLower(v));
+    hiddenLower.push_back(StringUtils::toLower(v));
   }
   std::vector<std::string> pinnedLower;
   pinnedLower.reserve(pinnedItems.size());
   for (const auto& v : pinnedItems) {
-    pinnedLower.push_back(toLower(v));
+    pinnedLower.push_back(StringUtils::toLower(v));
   }
   auto hasVariant = [&](std::string_view token, std::string_view value) {
     std::string raw(value);
@@ -103,10 +98,10 @@ std::size_t TrayDrawerPanel::visibleItemCount() const {
     }
     std::vector<std::string> variants;
     variants.push_back(raw);
-    variants.push_back(toLower(raw));
+    variants.push_back(StringUtils::toLower(raw));
     if (const auto slash = raw.find_last_of('/'); slash != std::string::npos && slash + 1 < raw.size()) {
       variants.push_back(raw.substr(slash + 1));
-      variants.push_back(toLower(raw.substr(slash + 1)));
+      variants.push_back(StringUtils::toLower(raw.substr(slash + 1)));
     }
     return std::ranges::find(variants, std::string(token)) != variants.end();
   };
@@ -114,7 +109,7 @@ std::size_t TrayDrawerPanel::visibleItemCount() const {
     if (token.empty()) {
       return false;
     }
-    const auto lowered = toLower(std::string(token));
+    const auto lowered = StringUtils::toLower(token);
     return hasVariant(lowered, item.id) || hasVariant(lowered, item.busName) || hasVariant(lowered, item.itemName) ||
            hasVariant(lowered, item.processName) || hasVariant(lowered, item.objectPath) ||
            hasVariant(lowered, item.iconName) || hasVariant(lowered, item.overlayIconName) ||

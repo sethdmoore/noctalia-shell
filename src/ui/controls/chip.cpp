@@ -23,12 +23,12 @@ void Chip::setActive(bool active) {
   if (active) {
     setFill(colorSpecFromRole(ColorRole::Primary));
     m_label->setColor(colorSpecFromRole(ColorRole::OnPrimary));
-    m_label->setBold(true);
+    m_label->setFontWeight(FontWeight::Bold);
     clearBorder();
   } else {
     setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
     m_label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    m_label->setBold(false);
+    m_label->setFontWeight(FontWeight::Normal);
     setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
   }
 }

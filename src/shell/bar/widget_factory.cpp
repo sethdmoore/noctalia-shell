@@ -71,6 +71,16 @@ namespace {
     return ActiveWindowTitleScrollMode::None;
   }
 
+  ActiveWindowDisplayMode parseActiveWindowDisplayMode(std::string_view value) {
+    if (value == "icon_only") {
+      return ActiveWindowDisplayMode::IconOnly;
+    }
+    if (value == "text_only") {
+      return ActiveWindowDisplayMode::TextOnly;
+    }
+    return ActiveWindowDisplayMode::IconAndText;
+  }
+
   MediaTitleScrollMode parseMediaTitleScrollMode(std::string_view value) {
     if (value == "always") {
       return MediaTitleScrollMode::Always;
@@ -80,6 +90,7 @@ namespace {
     }
     return MediaTitleScrollMode::None;
   }
+
 } // namespace
 
 WidgetFactory::WidgetFactory(CompositorPlatform& platform, const Config& config, NotificationManager* notifications,
@@ -99,7 +110,8 @@ WidgetFactory::WidgetFactory(CompositorPlatform& platform, const Config& config,
 WidgetFactory::~WidgetFactory() = default;
 
 std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output* output, float contentScale,
-                                              const std::string& barPosition, const std::string& barName) const {
+                                              const std::string& barPosition, const std::string& barName,
+                                              float widgetSpacing) const {
   // Resolve: if name matches a [widget.<name>] entry, use its type + settings.
   // Otherwise treat the name itself as the widget type with default settings.
   const WidgetConfig* wc = nullptr;
@@ -117,8 +129,11 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const float iconSize =
         static_cast<float>(wc != nullptr ? wc->getDouble("icon_size", Style::fontSizeBody) : Style::fontSizeBody);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
+    const std::string displayMode =
+        wc != nullptr ? wc->getString("display", "icon_and_text") : std::string("icon_and_text");
     auto widget = std::make_unique<ActiveWindowWidget>(m_platform, maxWidth, minWidth, iconSize,
-                                                       parseActiveWindowTitleScrollMode(titleScroll));
+                                                       parseActiveWindowTitleScrollMode(titleScroll),
+                                                       parseActiveWindowDisplayMode(displayMode));
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -150,10 +165,12 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
                                        : colorSpecFromRole(ColorRole::Error);
     const std::string displayModeStr = wc != nullptr ? wc->getString("display_mode", "icon") : std::string("icon");
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
+    const bool hideWhenPlugged = wc != nullptr ? wc->getBool("hide_when_plugged", false) : false;
+    const bool hideWhenFull = wc != nullptr ? wc->getBool("hide_when_full", false) : false;
     const BatteryDisplayMode displayMode =
         displayModeStr == "graphic" ? BatteryDisplayMode::Graphic : BatteryDisplayMode::Icon;
     auto widget = std::make_unique<BatteryWidget>(m_upower, deviceSelector, warningThreshold, warningColor, displayMode,
-                                                  showLabel);
+                                                  showLabel, hideWhenPlugged, hideWhenFull);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -268,8 +285,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const float minWidth = static_cast<float>(wc != nullptr ? wc->getDouble("min_length", 80.0) : 80.0);
     const float artSize = static_cast<float>(wc != nullptr ? wc->getDouble("art_size", 16.0) : 16.0);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
+    const bool hideWhenNoMedia = wc != nullptr ? wc->getBool("hide_when_no_media", false) : false;
     auto widget = std::make_unique<MediaWidget>(m_mpris, m_httpClient, output, maxWidth, minWidth, artSize,
-                                                parseMediaTitleScrollMode(titleScroll));
+                                                parseMediaTitleScrollMode(titleScroll), hideWhenNoMedia);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -331,7 +349,8 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
   }
 
   if (type == "spacer") {
-    const auto length = static_cast<float>(wc != nullptr ? wc->getDouble("length", 8.0) : 8.0);
+    const double defaultLength = 8.0 + 2.0 * static_cast<double>(widgetSpacing);
+    const auto length = static_cast<float>(wc != nullptr ? wc->getDouble("length", defaultLength) : defaultLength);
     auto widget = std::make_unique<SpacerWidget>(length);
     widget->setContentScale(contentScale);
     return widget;
@@ -395,9 +414,23 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
       }
     }
     const bool hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false;
+    const bool workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true;
+    const ColorSpec focusedColor = wc != nullptr
+                                       ? wc->getColorSpec("focused_color", colorSpecFromRole(ColorRole::Primary),
+                                                          "widget." + name + ".focused_color")
+                                       : colorSpecFromRole(ColorRole::Primary);
+    const ColorSpec occupiedColor = wc != nullptr
+                                        ? wc->getColorSpec("occupied_color", colorSpecFromRole(ColorRole::Secondary),
+                                                           "widget." + name + ".occupied_color")
+                                        : colorSpecFromRole(ColorRole::Secondary);
+    const ColorSpec emptyColor = wc != nullptr
+                                     ? wc->getColorSpec("empty_color", colorSpecFromRole(ColorRole::Secondary),
+                                                        "widget." + name + ".empty_color")
+                                     : colorSpecFromRole(ColorRole::Secondary);
     auto widget = std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, showAllOutputs,
                                                   onlyActiveWorkspace, showWorkspaceLabel, workspaceLabelPlacement,
-                                                  hideEmptyWorkspaces, barPosition, m_config.shell.shadow);
+                                                  hideEmptyWorkspaces, workspaceGroupCapsule, focusedColor,
+                                                  occupiedColor, emptyColor, barPosition, m_config.shell.shadow);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -414,8 +447,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const bool drawer = wc != nullptr ? wc->getBool("drawer", false) : false;
     const std::size_t drawerColumns =
         static_cast<std::size_t>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("drawer_columns", 3) : 3, 1, 5));
+    const bool matchAdjacentSpacing = wc != nullptr ? wc->getBool("match_adjacent_spacing", false) : false;
     auto widget = std::make_unique<TrayWidget>(m_tray, hiddenItems, pinnedItems, drawer, std::function<void()>{},
-                                               barPosition, false, drawerColumns);
+                                               barPosition, false, drawerColumns, widgetSpacing, matchAdjacentSpacing);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -424,7 +458,7 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const std::string target = wc != nullptr ? wc->getString("device", "output") : std::string("output");
     const auto volumeTarget = target == "input" ? VolumeWidgetTarget::Input : VolumeWidgetTarget::Output;
-    auto widget = std::make_unique<VolumeWidget>(m_audio, output, showLabel, volumeTarget);
+    auto widget = std::make_unique<VolumeWidget>(m_audio, &m_config, output, showLabel, volumeTarget);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -475,8 +509,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     }
     const bool hideWhenEmpty = wc != nullptr ? wc->getBool("hide_when_empty", false) : false;
     const double pillScale = wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0;
+    const bool minimal = wc != nullptr ? wc->getBool("minimal", false) : false;
     auto widget = std::make_unique<WorkspacesWidget>(m_platform, output, displayMode, focusedColor, occupiedColor,
-                                                     emptyColor, maxLabelChars, hideWhenEmpty, pillScale);
+                                                     emptyColor, maxLabelChars, hideWhenEmpty, pillScale, minimal);
     widget->setContentScale(contentScale);
     return widget;
   }

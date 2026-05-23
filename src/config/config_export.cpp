@@ -127,6 +127,8 @@ namespace config_export {
         item.insert_or_assign("label", action.label.value_or(""));
         item.insert_or_assign("glyph", action.glyph.value_or(""));
         item.insert_or_assign("variant", std::string(enumToKey(kSessionActionButtonVariants, action.variant)));
+        item.insert_or_assign("shortcut",
+                              action.shortcut.has_value() ? keyChordToString(*action.shortcut) : std::string{});
         array.push_back(std::move(item));
       }
       return array;
@@ -166,6 +168,7 @@ namespace config_export {
       table.insert_or_assign("shadow", bar.shadow);
       table.insert_or_assign("contact_shadow", bar.contactShadow);
       table.insert_or_assign("scale", static_cast<double>(bar.scale));
+      table.insert_or_assign("font_weight", static_cast<std::int64_t>(bar.fontWeight));
       table.insert_or_assign("start", stringArray(bar.startWidgets));
       table.insert_or_assign("center", stringArray(bar.centerWidgets));
       table.insert_or_assign("end", stringArray(bar.endWidgets));
@@ -257,8 +260,9 @@ namespace config_export {
         resolved.widgetCapsuleGroups = *ovr.widgetCapsuleGroups;
       if (ovr.widgetCapsulePadding)
         resolved.widgetCapsulePadding = static_cast<float>(*ovr.widgetCapsulePadding);
-      if (ovr.widgetCapsuleRadius)
+      if (ovr.widgetCapsuleRadius.has_value()) {
         resolved.widgetCapsuleRadius = *ovr.widgetCapsuleRadius;
+      }
       if (ovr.widgetCapsuleOpacity)
         resolved.widgetCapsuleOpacity = static_cast<float>(*ovr.widgetCapsuleOpacity);
       return resolved;
@@ -330,6 +334,8 @@ namespace config_export {
       panel.insert_or_assign("background_blur", shell.panel.backgroundBlur);
       panel.insert_or_assign("transparency_mode",
                              std::string(enumToKey(kPanelTransparencyModes, shell.panel.transparencyMode)));
+      panel.insert_or_assign("borders", shell.panel.borders);
+      panel.insert_or_assign("shadow", shell.panel.shadow);
       panel.insert_or_assign("launcher_placement",
                              std::string(enumToKey(kPanelPlacements, shell.panel.launcherPlacement)));
       panel.insert_or_assign("clipboard_placement",
@@ -510,6 +516,7 @@ namespace config_export {
       table.insert_or_assign("launcher_position", dock.launcherPosition);
       table.insert_or_assign("launcher_icon", dock.launcherIcon);
       table.insert_or_assign("pinned", stringArray(dock.pinned));
+      table.insert_or_assign("monitors", stringArray(dock.monitors));
       return table;
     }
 
@@ -652,7 +659,9 @@ namespace config_export {
     toml::table osd;
     osd.insert_or_assign("position", config.osd.position);
     osd.insert_or_assign("orientation", config.osd.orientation);
+    osd.insert_or_assign("scale", static_cast<double>(config.osd.scale));
     osd.insert_or_assign("lock_keys", config.osd.lockKeys);
+    osd.insert_or_assign("keyboard_layout", config.osd.keyboardLayout);
     root.insert_or_assign("osd", std::move(osd));
 
     toml::table system;

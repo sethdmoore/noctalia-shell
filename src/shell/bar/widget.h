@@ -2,6 +2,7 @@
 
 #include "config/config_service.h"
 #include "core/ui_phase.h"
+#include "render/core/renderer.h"
 #include "render/scene/node.h"
 
 #include <functional>
@@ -44,6 +45,8 @@ public:
   }
   [[nodiscard]] virtual bool reservesMiddleClick() const noexcept { return false; }
 
+  [[nodiscard]] virtual bool noGapAroundMe() const noexcept { return false; }
+
   [[nodiscard]] Node* root() const noexcept { return m_root ? m_root.get() : m_rootPtr; }
   [[nodiscard]] float width() const noexcept;
   [[nodiscard]] float height() const noexcept;
@@ -57,6 +60,8 @@ public:
   void setPanelToggleCallback(PanelToggleCallback callback);
   void setContentScale(float scale) noexcept { m_contentScale = scale; }
   [[nodiscard]] float contentScale() const noexcept { return m_contentScale; }
+  void setLabelFontWeight(FontWeight fontWeight) noexcept { m_labelFontWeight = fontWeight; }
+  [[nodiscard]] FontWeight labelFontWeight() const noexcept { return m_labelFontWeight; }
   void setConfigName(std::string name) { m_configName = std::move(name); }
   [[nodiscard]] std::string_view configName() const noexcept { return m_configName; }
   void setAnchor(bool anchor) noexcept { m_anchor = anchor; }
@@ -92,6 +97,7 @@ protected:
   virtual void doUpdate(Renderer& renderer) { (void)renderer; }
 
   float m_contentScale = 1.0f;
+  FontWeight m_labelFontWeight = FontWeight::Medium;
   std::string m_configName;
   bool m_anchor = false;
   AnimationManager* m_animations = nullptr;

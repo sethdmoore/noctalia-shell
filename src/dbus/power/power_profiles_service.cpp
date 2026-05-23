@@ -28,14 +28,14 @@ namespace {
 
   constexpr Logger kLog("power");
 
-  static const sdbus::ServiceName k_powerProfilesBusName{"org.freedesktop.UPower.PowerProfiles"};
-  static const sdbus::ObjectPath k_powerProfilesObjectPath{"/org/freedesktop/UPower/PowerProfiles"};
-  static constexpr auto k_powerProfilesInterface = "org.freedesktop.UPower.PowerProfiles";
-  static constexpr auto k_propertiesInterface = "org.freedesktop.DBus.Properties";
+  static const sdbus::ServiceName kPowerProfilesBusName{"org.freedesktop.UPower.PowerProfiles"};
+  static const sdbus::ObjectPath kPowerProfilesObjectPath{"/org/freedesktop/UPower/PowerProfiles"};
+  static constexpr auto kPowerProfilesInterface = "org.freedesktop.UPower.PowerProfiles";
+  static constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
 
   template <typename T> T getPropertyOr(sdbus::IProxy& proxy, std::string_view propertyName, T fallback) {
     try {
-      const sdbus::Variant value = proxy.getProperty(propertyName).onInterface(k_powerProfilesInterface);
+      const sdbus::Variant value = proxy.getProperty(propertyName).onInterface(kPowerProfilesInterface);
       return value.get<T>();
     } catch (const sdbus::Error&) {
       return fallback;
@@ -82,13 +82,13 @@ std::string_view profileGlyphName(std::string_view profile) {
 }
 
 PowerProfilesService::PowerProfilesService(SystemBus& bus) : m_bus(bus) {
-  m_proxy = sdbus::createProxy(m_bus.connection(), k_powerProfilesBusName, k_powerProfilesObjectPath);
+  m_proxy = sdbus::createProxy(m_bus.connection(), kPowerProfilesBusName, kPowerProfilesObjectPath);
 
   m_proxy->uponSignal("PropertiesChanged")
-      .onInterface(k_propertiesInterface)
+      .onInterface(kPropertiesInterface)
       .call([this](const std::string& interfaceName, const std::map<std::string, sdbus::Variant>& changedProperties,
                    const std::vector<std::string>& invalidatedProperties) {
-        if (interfaceName != k_powerProfilesInterface) {
+        if (interfaceName != kPowerProfilesInterface) {
           return;
         }
 
@@ -123,7 +123,7 @@ bool PowerProfilesService::setActiveProfile(std::string_view profile) {
     m_pendingLocalActiveProfile = requested;
   }
   try {
-    m_proxy->setProperty("ActiveProfile").onInterface(k_powerProfilesInterface).toValue(requested);
+    m_proxy->setProperty("ActiveProfile").onInterface(kPowerProfilesInterface).toValue(requested);
     refresh();
     return true;
   } catch (const sdbus::Error& e) {
@@ -158,7 +158,7 @@ PowerProfilesState PowerProfilesService::readState() const {
   next.performanceInhibited = getPropertyOr<std::string>(*m_proxy, "PerformanceInhibited", "");
 
   try {
-    const sdbus::Variant profilesVariant = m_proxy->getProperty("Profiles").onInterface(k_powerProfilesInterface);
+    const sdbus::Variant profilesVariant = m_proxy->getProperty("Profiles").onInterface(kPowerProfilesInterface);
     next.profiles = decodeProfiles(profilesVariant);
   } catch (const sdbus::Error&) {
     next.profiles.clear();

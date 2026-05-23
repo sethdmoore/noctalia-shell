@@ -119,15 +119,9 @@ void SysmonWidget::create() {
 
   if (m_displayMode == SysmonDisplayMode::Graph) {
     auto chartBg = std::make_unique<Box>();
-    RoundedRectStyle bgStyle;
-    bgStyle.fill = colorForRole(ColorRole::SurfaceVariant);
-    bgStyle.radius = Style::scaledRadiusSm();
-    bgStyle.softness = 0.5f;
-    chartBg->setStyle(bgStyle);
     m_chartBg = static_cast<Box*>(container->addChild(std::move(chartBg)));
 
     auto graph = std::make_unique<GraphNode>();
-    graph->setLineColor1(colorForRole(ColorRole::Primary));
     graph->setLineWidth(kGraphLineWidth * m_contentScale);
     graph->setGraphFillOpacity(0.15f);
     m_graphNode = static_cast<GraphNode*>(m_chartBg->addChild(std::move(graph)));
@@ -143,7 +137,7 @@ void SysmonWidget::create() {
 
   if (m_displayMode == SysmonDisplayMode::Text || m_showLabel) {
     auto label = std::make_unique<Label>();
-    label->setBold(true);
+    label->setFontWeight(labelFontWeight());
     label->setFontSize(Style::fontSizeBody * m_contentScale);
     if (m_labelMinWidth > 0.0f) {
       label->setMinWidth(m_labelMinWidth * m_contentScale);
@@ -153,6 +147,25 @@ void SysmonWidget::create() {
   }
 
   setRoot(std::move(container));
+
+  syncVisualPalette();
+  m_paletteConn = paletteChanged().connect([this]() {
+    syncVisualPalette();
+    requestRedraw();
+  });
+}
+
+void SysmonWidget::syncVisualPalette() {
+  if (m_chartBg != nullptr) {
+    RoundedRectStyle bgStyle;
+    bgStyle.fill = colorForRole(ColorRole::SurfaceVariant);
+    bgStyle.radius = Style::scaledRadiusSm();
+    bgStyle.softness = 0.5f;
+    m_chartBg->setStyle(bgStyle);
+  }
+  if (m_graphNode != nullptr) {
+    m_graphNode->setLineColor1(colorForRole(ColorRole::Primary));
+  }
 }
 
 bool SysmonWidget::syncLabelText(const std::string& raw) {
@@ -191,6 +204,7 @@ void SysmonWidget::doLayout(Renderer& renderer, float containerWidth, float cont
   const bool orientationChanged = m_isVerticalBar != isVerticalBar;
   m_isVerticalBar = isVerticalBar;
 
+  syncVisualPalette();
   m_glyph->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
   m_glyph->measure(renderer);
   const float glyphH = m_glyph->height();

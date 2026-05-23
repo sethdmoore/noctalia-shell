@@ -15,24 +15,11 @@
 
 namespace {
 
-  static const sdbus::ServiceName k_upowerBusName{"org.freedesktop.UPower"};
-  static const sdbus::ObjectPath k_upowerObjectPath{"/org/freedesktop/UPower"};
-  static constexpr auto k_upowerInterface = "org.freedesktop.UPower";
-  static constexpr auto k_deviceInterface = "org.freedesktop.UPower.Device";
-  static constexpr auto k_propertiesInterface = "org.freedesktop.DBus.Properties";
-
-  // UPower device types
-  constexpr std::uint32_t k_deviceTypeUnknown = 0;
-  constexpr std::uint32_t k_deviceTypeLinePower = 1;
-  constexpr std::uint32_t k_deviceTypeBattery = 2;
-
-  // UPower battery states
-  constexpr std::uint32_t k_stateCharging = 1;
-  constexpr std::uint32_t k_stateDischarging = 2;
-  constexpr std::uint32_t k_stateEmpty = 3;
-  constexpr std::uint32_t k_stateFullyCharged = 4;
-  constexpr std::uint32_t k_statePendingCharge = 5;
-  constexpr std::uint32_t k_statePendingDischarge = 6;
+  static const sdbus::ServiceName kUpowerBusName{"org.freedesktop.UPower"};
+  static const sdbus::ObjectPath kUpowerObjectPath{"/org/freedesktop/UPower"};
+  static constexpr auto kUpowerInterface = "org.freedesktop.UPower";
+  static constexpr auto kDeviceInterface = "org.freedesktop.UPower.Device";
+  static constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
 
 } // namespace
 
@@ -68,8 +55,8 @@ namespace {
     }
   }
 
-  bool isBatteryCapableDeviceType(std::uint32_t type) {
-    return type != k_deviceTypeUnknown && type != k_deviceTypeLinePower;
+  bool isBatteryCapableDeviceType(UPowerDeviceType type) {
+    return type != UPowerDeviceType::Unknown && type != UPowerDeviceType::LinePower;
   }
 
   bool isAutoSelector(std::string_view selector) {
@@ -103,22 +90,10 @@ namespace {
   }
 
   BatteryState decodeBatteryState(std::uint32_t raw) {
-    switch (raw) {
-    case k_stateCharging:
-      return BatteryState::Charging;
-    case k_stateDischarging:
-      return BatteryState::Discharging;
-    case k_stateEmpty:
-      return BatteryState::Empty;
-    case k_stateFullyCharged:
-      return BatteryState::FullyCharged;
-    case k_statePendingCharge:
-      return BatteryState::PendingCharge;
-    case k_statePendingDischarge:
-      return BatteryState::PendingDischarge;
-    default:
-      return BatteryState::Unknown;
+    if (raw >= 1 && raw <= 6) {
+      return static_cast<BatteryState>(raw);
     }
+    return BatteryState::Unknown;
   }
 
   constexpr Logger kLog("upower");
@@ -126,22 +101,22 @@ namespace {
 } // namespace
 
 UPowerService::UPowerService(SystemBus& bus) : m_bus(bus) {
-  m_upowerProxy = sdbus::createProxy(m_bus.connection(), k_upowerBusName, k_upowerObjectPath);
+  m_upowerProxy = sdbus::createProxy(m_bus.connection(), kUpowerBusName, kUpowerObjectPath);
 
   m_upowerProxy->uponSignal("PropertiesChanged")
-      .onInterface(k_propertiesInterface)
+      .onInterface(kPropertiesInterface)
       .call([this](const std::string& interfaceName, const std::map<std::string, sdbus::Variant>& /*changed*/,
                    const std::vector<std::string>& /*invalidated*/) {
-        if (interfaceName == k_upowerInterface) {
+        if (interfaceName == kUpowerInterface) {
           refresh();
         }
       });
 
-  m_upowerProxy->uponSignal("DeviceAdded").onInterface(k_upowerInterface).call([this](const sdbus::ObjectPath&) {
+  m_upowerProxy->uponSignal("DeviceAdded").onInterface(kUpowerInterface).call([this](const sdbus::ObjectPath&) {
     rescanDevices();
   });
 
-  m_upowerProxy->uponSignal("DeviceRemoved").onInterface(k_upowerInterface).call([this](const sdbus::ObjectPath&) {
+  m_upowerProxy->uponSignal("DeviceRemoved").onInterface(kUpowerInterface).call([this](const sdbus::ObjectPath&) {
     rescanDevices();
   });
 
@@ -180,7 +155,7 @@ UPowerState UPowerService::stateForDevice(std::string_view selector) const {
   }
 
   UPowerState missing;
-  missing.onBattery = getPropertyOr<bool>(*m_upowerProxy, k_upowerInterface, "OnBattery", false);
+  missing.onBattery = getPropertyOr<bool>(*m_upowerProxy, kUpowerInterface, "OnBattery", false);
   return missing;
 }
 
@@ -189,7 +164,7 @@ void UPowerService::rescanDevices() {
 
   std::vector<sdbus::ObjectPath> paths;
   try {
-    m_upowerProxy->callMethod("EnumerateDevices").onInterface(k_upowerInterface).storeResultsTo(paths);
+    m_upowerProxy->callMethod("EnumerateDevices").onInterface(kUpowerInterface).storeResultsTo(paths);
   } catch (const sdbus::Error& e) {
     kLog.warn("EnumerateDevices failed: {}", e.what());
     emitChangedIfNeeded(false);
@@ -200,17 +175,17 @@ void UPowerService::rescanDevices() {
   nextDevices.reserve(paths.size());
   for (const auto& path : paths) {
     try {
-      auto proxy = sdbus::createProxy(m_bus.connection(), k_upowerBusName, path);
+      auto proxy = sdbus::createProxy(m_bus.connection(), kUpowerBusName, path);
       auto info = readDeviceInfo(std::string(path), *proxy);
       if (!isBatteryCapableDeviceType(info.type)) {
         continue;
       }
 
       proxy->uponSignal("PropertiesChanged")
-          .onInterface(k_propertiesInterface)
+          .onInterface(kPropertiesInterface)
           .call([this](const std::string& interfaceName, const std::map<std::string, sdbus::Variant>& /*changed*/,
                        const std::vector<std::string>& /*invalidated*/) {
-            if (interfaceName == k_deviceInterface) {
+            if (interfaceName == kDeviceInterface) {
               refresh();
             }
           });
@@ -243,11 +218,11 @@ void UPowerService::rescanDevices() {
 UPowerState UPowerService::readDefaultState() const {
   UPowerState next;
 
-  next.onBattery = getPropertyOr<bool>(*m_upowerProxy, k_upowerInterface, "OnBattery", false);
+  next.onBattery = getPropertyOr<bool>(*m_upowerProxy, kUpowerInterface, "OnBattery", false);
 
   if (m_displayDeviceProxy != nullptr) {
     next = readDeviceState(*m_displayDeviceProxy);
-    next.onBattery = getPropertyOr<bool>(*m_upowerProxy, k_upowerInterface, "OnBattery", false);
+    next.onBattery = getPropertyOr<bool>(*m_upowerProxy, kUpowerInterface, "OnBattery", false);
     if (next.isPresent) {
       return next;
     }
@@ -259,20 +234,20 @@ UPowerState UPowerService::readDefaultState() const {
   }
 
   next = device->state;
-  next.onBattery = getPropertyOr<bool>(*m_upowerProxy, k_upowerInterface, "OnBattery", false);
+  next.onBattery = getPropertyOr<bool>(*m_upowerProxy, kUpowerInterface, "OnBattery", false);
   return next;
 }
 
 UPowerState UPowerService::readDeviceState(sdbus::IProxy& proxy) const {
   UPowerState next;
 
-  next.onBattery = getPropertyOr<bool>(*m_upowerProxy, k_upowerInterface, "OnBattery", false);
-  next.percentage = getPropertyOr<double>(proxy, k_deviceInterface, "Percentage", 0.0);
-  next.isPresent = getPropertyOr<bool>(proxy, k_deviceInterface, "IsPresent", false);
-  const auto rawState = getPropertyOr<std::uint32_t>(proxy, k_deviceInterface, "State", 0);
+  next.onBattery = getPropertyOr<bool>(*m_upowerProxy, kUpowerInterface, "OnBattery", false);
+  next.percentage = getPropertyOr<double>(proxy, kDeviceInterface, "Percentage", 0.0);
+  next.isPresent = getPropertyOr<bool>(proxy, kDeviceInterface, "IsPresent", false);
+  const auto rawState = getPropertyOr<std::uint32_t>(proxy, kDeviceInterface, "State", 0);
   next.state = decodeBatteryState(rawState);
-  next.timeToEmpty = getPropertyOr<std::int64_t>(proxy, k_deviceInterface, "TimeToEmpty", 0);
-  next.timeToFull = getPropertyOr<std::int64_t>(proxy, k_deviceInterface, "TimeToFull", 0);
+  next.timeToEmpty = getPropertyOr<std::int64_t>(proxy, kDeviceInterface, "TimeToEmpty", 0);
+  next.timeToFull = getPropertyOr<std::int64_t>(proxy, kDeviceInterface, "TimeToFull", 0);
 
   return next;
 }
@@ -280,12 +255,12 @@ UPowerState UPowerService::readDeviceState(sdbus::IProxy& proxy) const {
 UPowerDeviceInfo UPowerService::readDeviceInfo(std::string path, sdbus::IProxy& proxy) const {
   UPowerDeviceInfo info;
   info.path = std::move(path);
-  info.nativePath = getPropertyOr<std::string>(proxy, k_deviceInterface, "NativePath", "");
-  info.vendor = getPropertyOr<std::string>(proxy, k_deviceInterface, "Vendor", "");
-  info.model = getPropertyOr<std::string>(proxy, k_deviceInterface, "Model", "");
-  info.serial = getPropertyOr<std::string>(proxy, k_deviceInterface, "Serial", "");
-  info.type = getPropertyOr<std::uint32_t>(proxy, k_deviceInterface, "Type", 0);
-  info.powerSupply = getPropertyOr<bool>(proxy, k_deviceInterface, "PowerSupply", false);
+  info.nativePath = getPropertyOr<std::string>(proxy, kDeviceInterface, "NativePath", "");
+  info.vendor = getPropertyOr<std::string>(proxy, kDeviceInterface, "Vendor", "");
+  info.model = getPropertyOr<std::string>(proxy, kDeviceInterface, "Model", "");
+  info.serial = getPropertyOr<std::string>(proxy, kDeviceInterface, "Serial", "");
+  info.type = static_cast<UPowerDeviceType>(getPropertyOr<std::uint32_t>(proxy, kDeviceInterface, "Type", 0));
+  info.powerSupply = getPropertyOr<bool>(proxy, kDeviceInterface, "PowerSupply", false);
   info.state = readDeviceState(proxy);
   info.isPresent = info.state.isPresent;
   return info;
@@ -293,7 +268,7 @@ UPowerDeviceInfo UPowerService::readDeviceInfo(std::string path, sdbus::IProxy& 
 
 const UPowerDeviceInfo* UPowerService::defaultSystemBattery() const noexcept {
   for (const auto& device : m_devices) {
-    if (device.info.type == k_deviceTypeBattery && device.info.powerSupply && device.info.isPresent) {
+    if (device.info.isLaptopBattery() && device.info.isPresent) {
       return &device.info;
     }
   }
@@ -317,7 +292,7 @@ const UPowerDeviceInfo* UPowerService::findDevice(std::string_view selector) con
 void UPowerService::refreshDisplayDeviceProxy() {
   sdbus::ObjectPath path;
   try {
-    m_upowerProxy->callMethod("GetDisplayDevice").onInterface(k_upowerInterface).storeResultsTo(path);
+    m_upowerProxy->callMethod("GetDisplayDevice").onInterface(kUpowerInterface).storeResultsTo(path);
   } catch (const sdbus::Error& e) {
     kLog.warn("GetDisplayDevice failed: {}", e.what());
     m_displayDeviceProxy.reset();
@@ -336,12 +311,12 @@ void UPowerService::refreshDisplayDeviceProxy() {
   }
 
   try {
-    auto proxy = sdbus::createProxy(m_bus.connection(), k_upowerBusName, path);
+    auto proxy = sdbus::createProxy(m_bus.connection(), kUpowerBusName, path);
     proxy->uponSignal("PropertiesChanged")
-        .onInterface(k_propertiesInterface)
+        .onInterface(kPropertiesInterface)
         .call([this](const std::string& interfaceName, const std::map<std::string, sdbus::Variant>& /*changed*/,
                      const std::vector<std::string>& /*invalidated*/) {
-          if (interfaceName == k_deviceInterface) {
+          if (interfaceName == kDeviceInterface) {
             refresh();
           }
         });

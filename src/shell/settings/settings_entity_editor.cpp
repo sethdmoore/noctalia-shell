@@ -20,12 +20,13 @@
 namespace settings {
   namespace {
 
-    std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color, bool bold = false) {
+    std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color,
+                                     FontWeight fontWeight = FontWeight::Normal) {
       auto label = std::make_unique<Label>();
       label->setText(text);
       label->setFontSize(fontSize);
       label->setColor(color);
-      label->setBold(bold);
+      label->setFontWeight(fontWeight);
       return label;
     }
 
@@ -44,15 +45,16 @@ namespace settings {
       return std::any_of(cfg.bars.begin(), cfg.bars.end(), [name](const BarConfig& bar) { return bar.name == name; });
     }
 
-    Flex* makeSection(Flex& content, std::string_view title, float scale) {
+    Flex* makeSection(Flex& content, std::string_view title, float scale, bool showBorder) {
       auto section = std::make_unique<Flex>();
       section->setDirection(FlexDirection::Vertical);
       section->setAlign(FlexAlign::Stretch);
       section->setGap(Style::spaceSm * scale);
       section->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      section->setCardStyle(scale);
+      section->setCardStyle(scale, 1.0f, showBorder);
       section->setFill(colorSpecFromRole(ColorRole::Surface));
-      section->addChild(makeLabel(title, Style::fontSizeTitle * scale, colorSpecFromRole(ColorRole::OnSurface), true));
+      section->addChild(
+          makeLabel(title, Style::fontSizeTitle * scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold));
 
       auto* raw = section.get();
       content.addChild(std::move(section));
@@ -69,7 +71,8 @@ namespace settings {
             ctx.pendingDeleteMonitorOverrideBarName == barName && ctx.pendingDeleteMonitorOverrideMatch == match;
         const bool renaming =
             ctx.renamingMonitorOverrideBarName == barName && ctx.renamingMonitorOverrideMatch == match;
-        auto* management = makeSection(content, i18n::tr("settings.entities.monitor-override.management"), ctx.scale);
+        auto* management = makeSection(content, i18n::tr("settings.entities.monitor-override.management"), ctx.scale,
+                                       ctx.config.shell.panel.borders);
 
         if (renaming) {
           auto renameRow = std::make_unique<Flex>();
@@ -160,10 +163,10 @@ namespace settings {
 
           confirmPanel->addChild(
               makeLabel(i18n::tr("settings.entities.monitor-override.delete-confirm-title", "name", match),
-                        Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::Error), true));
+                        Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::Error), FontWeight::Bold));
           confirmPanel->addChild(makeLabel(i18n::tr("settings.entities.monitor-override.delete-confirm-desc"),
                                            Style::fontSizeCaption * ctx.scale,
-                                           colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+                                           colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
 
           auto confirmRow = std::make_unique<Flex>();
           confirmRow->setDirection(FlexDirection::Horizontal);
@@ -276,7 +279,8 @@ namespace settings {
 
         const bool pendingDelete = overrideOnly && ctx.pendingDeleteBarName == barName;
         const bool renaming = overrideOnly && ctx.renamingBarName == barName;
-        auto* management = makeSection(content, i18n::tr("settings.entities.bar.management"), ctx.scale);
+        auto* management = makeSection(content, i18n::tr("settings.entities.bar.management"), ctx.scale,
+                                       ctx.config.shell.panel.borders);
 
         if (renaming) {
           auto renameRow = std::make_unique<Flex>();
@@ -351,10 +355,11 @@ namespace settings {
           confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
 
           confirmPanel->addChild(makeLabel(i18n::tr("settings.entities.bar.delete-confirm-title", "name", barName),
-                                           Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::Error), true));
+                                           Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::Error),
+                                           FontWeight::Bold));
           confirmPanel->addChild(makeLabel(i18n::tr("settings.entities.bar.delete-confirm-desc"),
                                            Style::fontSizeCaption * ctx.scale,
-                                           colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+                                           colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
 
           auto confirmRow = std::make_unique<Flex>();
           confirmRow->setDirection(FlexDirection::Horizontal);

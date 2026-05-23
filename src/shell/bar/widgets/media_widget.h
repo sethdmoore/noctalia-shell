@@ -25,7 +25,7 @@ enum class MediaTitleScrollMode : std::uint8_t {
 class MediaWidget : public Widget {
 public:
   MediaWidget(MprisService* mpris, HttpClient* httpClient, wl_output* output, float maxWidth, float minWidth,
-              float artSize, MediaTitleScrollMode titleScrollMode);
+              float artSize, MediaTitleScrollMode titleScrollMode, bool hideWhenNoMedia = false);
 
   void create() override;
 
@@ -34,6 +34,7 @@ private:
   void doUpdate(Renderer& renderer) override;
   void applyTitleScrollMode(bool titleVisible);
   void syncState(Renderer& renderer);
+  void syncWidgetVisibility(bool hasMedia);
   [[nodiscard]] static std::string buildDisplayText(const MprisPlayerInfo& player);
   [[nodiscard]] std::string resolveArtworkPath() const;
 
@@ -44,6 +45,7 @@ private:
   float m_minWidth = 80.0f;
   float m_artSize = 16.0f;
   MediaTitleScrollMode m_titleScrollMode = MediaTitleScrollMode::None;
+  bool m_hideWhenNoMedia = false;
   InputArea* m_area = nullptr;
   Image* m_art = nullptr;
   Glyph* m_emptyGlyph = nullptr;

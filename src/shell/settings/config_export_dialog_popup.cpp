@@ -48,12 +48,13 @@ namespace settings {
       };
     }
 
-    std::unique_ptr<Label> makeLabel(std::string text, float fontSize, ColorSpec color, bool bold = false) {
+    std::unique_ptr<Label> makeLabel(std::string text, float fontSize, ColorSpec color,
+                                     FontWeight fontWeight = FontWeight::Normal) {
       auto label = std::make_unique<Label>();
       label->setText(text);
       label->setFontSize(fontSize);
       label->setColor(color);
-      label->setBold(bold);
+      label->setFontWeight(fontWeight);
       return label;
     }
 
@@ -151,7 +152,8 @@ namespace settings {
     copy->setGap(Style::spaceXs * m_scale);
     copy->setFlexGrow(1.0f);
 
-    auto titleLabel = makeLabel(title, Style::fontSizeBody * m_scale, colorSpecFromRole(ColorRole::OnSurface), true);
+    auto titleLabel =
+        makeLabel(title, Style::fontSizeBody * m_scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold);
     titleLabel->setMaxLines(1);
     copy->addChild(std::move(titleLabel));
 
@@ -188,7 +190,7 @@ namespace settings {
     header->setGap(Style::spaceSm * m_scale);
 
     auto title = makeLabel(i18n::tr("settings.export-config.title"), Style::fontSizeTitle * m_scale,
-                           colorSpecFromRole(ColorRole::OnSurface), true);
+                           colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold);
     title->setFlexGrow(1.0f);
     header->addChild(std::move(title));
 

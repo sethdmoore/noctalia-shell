@@ -14,7 +14,7 @@ sudo dnf install meson gcc-c++ just \
   wayland-devel wayland-protocols-devel \
   libEGL-devel mesa-libGLES-devel \
   freetype-devel fontconfig-devel \
-  cairo-devel pango-devel \
+  cairo-devel pango-devel harfbuzz-devel \
   libxkbcommon-devel glib2-devel \
   sdbus-cpp-devel pipewire-devel \
   pam-devel polkit-devel libcurl-devel libwebp-devel librsvg2-devel
@@ -26,7 +26,7 @@ sudo dnf install meson gcc-c++ just \
 sudo pacman -S meson gcc just \
   wayland wayland-protocols \
   libglvnd freetype2 fontconfig \
-  cairo pango \
+  cairo pango harfbuzz \
   libxkbcommon glib2 \
   sdbus-cpp libpipewire polkit \
   pam curl libwebp librsvg
@@ -39,7 +39,7 @@ sudo apt install meson g++ just \
   libwayland-dev wayland-protocols \
   libegl-dev libgles-dev \
   libfreetype-dev libfontconfig-dev \
-  libcairo2-dev libpango1.0-dev \
+  libcairo2-dev libpango1.0-dev libharfbuzz-dev \
   libxkbcommon-dev libglib2.0-dev \
   libsdbus-c++-dev libpipewire-0.3-dev \
   libpam0g-dev libpolkit-agent-1-dev libpolkit-gobject-1-dev \
@@ -52,7 +52,7 @@ sudo moss it meson build-essential \
   wayland-devel wayland-protocols-devel \
   mesa-libegl-devel mesa-libgl-devel \
   freetype-devel fontconfig-devel \
-  cairo-devel pango-devel \
+  cairo-devel pango-devel harfbuzz-devel \
   libxkbcommon-devel glib2-devel \
   sdbus-cpp-devel pipewire-devel \
   linux-pam-devel polkit-devel \

@@ -234,7 +234,7 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
   for (const auto& display : displays) {
     // Card container
     auto card = std::make_unique<Flex>();
-    applySectionCardStyle(*card, scale, panelCardOpacity());
+    applySectionCardStyle(*card, scale, panelCardOpacity(), panelBordersEnabled());
 
     // Header row: icon + display name
     auto headerRow = std::make_unique<Flex>();
@@ -251,7 +251,7 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
 
     auto nameLabel = std::make_unique<Label>();
     nameLabel->setText(display.label);
-    nameLabel->setBold(true);
+    nameLabel->setFontWeight(FontWeight::Bold);
     nameLabel->setFontSize(Style::fontSizeBody * scale);
     nameLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
     nameLabel->setFlexGrow(1.0f);

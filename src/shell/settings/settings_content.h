@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -17,6 +18,11 @@ class Label;
 class Node;
 
 namespace settings {
+
+  // Pango line budget for setting descriptions: wrap up to this many lines, then ellipsize.
+  inline constexpr int kSettingDescriptionMaxLines = 5;
+
+  [[nodiscard]] std::unique_ptr<Label> makeSettingSubtitleLabel(std::string_view text, float scale);
 
   struct SettingsContentContext {
     const Config& config;

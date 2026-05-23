@@ -4,6 +4,7 @@
 #include "i18n/i18n.h"
 #include "json.hpp"
 #include "net/http_client.h"
+#include "time/time_format.h"
 #include "util/string_utils.h"
 
 #include <algorithm>
@@ -59,11 +60,7 @@ namespace {
     std::tm tm{};
     gmtime_r(&time, &tm);
 
-    char buffer[11]{};
-    if (std::strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm) == 0) {
-      return {};
-    }
-    return buffer;
+    return formatStrftime("%Y-%m-%d", tm);
   }
 
   bool dropPastForecastDays(WeatherSnapshot& snapshot) {

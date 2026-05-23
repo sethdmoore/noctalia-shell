@@ -69,6 +69,8 @@ public:
   void scrollToIndex(std::size_t index);
   void setSelectedIndex(std::optional<std::size_t> index);
   [[nodiscard]] std::optional<std::size_t> selectedIndex() const noexcept { return m_selectedIndex; }
+  // Items to move for a Page Up/Down step (one viewport of rows, at least one item).
+  [[nodiscard]] std::size_t pageItemStride() const noexcept;
 
   void setOnSelectionChanged(std::function<void(std::optional<std::size_t>)> callback);
 

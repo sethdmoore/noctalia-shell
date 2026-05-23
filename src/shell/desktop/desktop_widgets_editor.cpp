@@ -717,7 +717,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
 
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("desktop-widgets.editor.title"));
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeBody);
   toolbarHandle->addChild(std::move(title));
 

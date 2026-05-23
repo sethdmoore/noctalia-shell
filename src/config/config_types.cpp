@@ -55,15 +55,15 @@ std::vector<ShortcutConfig> defaultControlCenterShortcuts() {
 std::vector<SessionPanelActionConfig> defaultSessionPanelActions() {
   return {
       SessionPanelActionConfig{"lock", true, std::nullopt, std::nullopt, std::nullopt,
-                               SessionActionButtonVariant::Default},
+                               SessionActionButtonVariant::Default, KeyChord{XKB_KEY_1, 0}},
       SessionPanelActionConfig{"logout", true, std::nullopt, std::nullopt, std::nullopt,
-                               SessionActionButtonVariant::Default},
+                               SessionActionButtonVariant::Default, KeyChord{XKB_KEY_2, 0}},
       SessionPanelActionConfig{"suspend", true, std::nullopt, std::nullopt, std::nullopt,
-                               SessionActionButtonVariant::Default},
+                               SessionActionButtonVariant::Default, KeyChord{XKB_KEY_3, 0}},
       SessionPanelActionConfig{"reboot", true, std::nullopt, std::nullopt, std::nullopt,
-                               SessionActionButtonVariant::Default},
+                               SessionActionButtonVariant::Default, KeyChord{XKB_KEY_4, 0}},
       SessionPanelActionConfig{"shutdown", true, std::nullopt, std::nullopt, std::nullopt,
-                               SessionActionButtonVariant::Destructive},
+                               SessionActionButtonVariant::Destructive, KeyChord{XKB_KEY_5, 0}},
   };
 }
 

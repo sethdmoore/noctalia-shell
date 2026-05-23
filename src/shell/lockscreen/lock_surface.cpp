@@ -336,14 +336,14 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
 
   constexpr float kClockFontSize = 64.0f;
   m_clock->setFontSize(kClockFontSize);
-  m_clock->setBold(true);
+  m_clock->setFontWeight(FontWeight::Bold);
   m_clock->measure(*renderer);
   const float clockX = sw - 48.0f - m_clock->width();
   const float clockY = 86.0f;
 
   m_clockShadow->setVisible(m_clockShadowEnabled);
   m_clockShadow->setFontSize(kClockFontSize);
-  m_clockShadow->setBold(true);
+  m_clockShadow->setFontWeight(FontWeight::Bold);
   m_clockShadow->setColor(colorSpecFromRole(ColorRole::Shadow, 0.55f));
   m_clockShadow->setText(m_clock->text());
   m_clockShadow->measure(*renderer);

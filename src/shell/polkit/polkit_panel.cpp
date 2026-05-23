@@ -67,7 +67,7 @@ void PolkitPanel::create() {
 
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("auth.polkit.title"));
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeTitle * scale);
   title->setColor(colorSpecFromRole(ColorRole::Primary));
   m_titleLabel = title.get();

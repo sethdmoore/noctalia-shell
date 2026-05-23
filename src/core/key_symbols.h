@@ -32,6 +32,14 @@ namespace KeySymbol {
 
   [[nodiscard]] inline bool isDown(std::uint32_t sym) noexcept { return sym == XKB_KEY_Down; }
 
+  [[nodiscard]] inline bool isPageUp(std::uint32_t sym) noexcept {
+    return sym == XKB_KEY_Page_Up || sym == XKB_KEY_KP_Page_Up;
+  }
+
+  [[nodiscard]] inline bool isPageDown(std::uint32_t sym) noexcept {
+    return sym == XKB_KEY_Page_Down || sym == XKB_KEY_KP_Page_Down;
+  }
+
   [[nodiscard]] inline bool isHome(std::uint32_t sym) noexcept { return sym == XKB_KEY_Home; }
 
   [[nodiscard]] inline bool isEnd(std::uint32_t sym) noexcept { return sym == XKB_KEY_End; }

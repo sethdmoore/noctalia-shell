@@ -27,9 +27,9 @@ namespace {
 } // namespace
 
 MediaWidget::MediaWidget(MprisService* mpris, HttpClient* httpClient, wl_output* output, float maxWidth, float minWidth,
-                         float artSize, MediaTitleScrollMode titleScrollMode)
+                         float artSize, MediaTitleScrollMode titleScrollMode, bool hideWhenNoMedia)
     : m_mpris(mpris), m_httpClient(httpClient), m_output(output), m_maxWidth(maxWidth), m_minWidth(minWidth),
-      m_artSize(artSize), m_titleScrollMode(titleScrollMode) {}
+      m_artSize(artSize), m_titleScrollMode(titleScrollMode), m_hideWhenNoMedia(hideWhenNoMedia) {}
 
 void MediaWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -61,7 +61,7 @@ void MediaWidget::create() {
   area->addChild(std::move(art));
 
   auto label = std::make_unique<Label>();
-  label->setBold(true);
+  label->setFontWeight(labelFontWeight());
   label->setFontSize(Style::fontSizeBody * m_contentScale);
   label->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
   label->setMaxWidth(m_maxWidth * m_contentScale);
@@ -174,12 +174,27 @@ void MediaWidget::applyTitleScrollMode(bool titleVisible) {
   m_label->setAutoScrollOnlyWhenHovered(false);
 }
 
+void MediaWidget::syncWidgetVisibility(bool hasMedia) {
+  const bool showWidget = !m_hideWhenNoMedia || hasMedia;
+  if (Node* rootNode = root(); rootNode != nullptr) {
+    if (rootNode->visible() != showWidget || rootNode->participatesInLayout() != showWidget) {
+      rootNode->setVisible(showWidget);
+      rootNode->setParticipatesInLayout(showWidget);
+      requestUpdate();
+    }
+  }
+}
+
 void MediaWidget::syncState(Renderer& renderer) {
   if (m_art == nullptr || m_label == nullptr) {
     return;
   }
 
   const auto active = m_mpris != nullptr ? m_mpris->activePlayer() : std::nullopt;
+  syncWidgetVisibility(active.has_value());
+  if (m_hideWhenNoMedia && !active.has_value()) {
+    return;
+  }
 
   std::string playbackStatus;
   std::string displayText = i18n::tr("bar.widgets.media.nothing-playing");

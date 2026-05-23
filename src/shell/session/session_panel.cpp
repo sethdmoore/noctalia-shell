@@ -648,6 +648,9 @@ Button* SessionPanel::createActionButton(const SessionPanelActionConfig& cfg, fl
   const std::string labelText =
       cfg.label.has_value() && !cfg.label->empty() ? *cfg.label : i18n::tr(labelKeyForAction(cfg.action));
   button->setText(labelText);
+  if (cfg.shortcut.has_value() && cfg.shortcut->sym != 0) {
+    button->setBadge(keyChordDisplayLabel(*cfg.shortcut));
+  }
   button->setGlyph(cfg.glyph.has_value() && !cfg.glyph->empty() ? *cfg.glyph : defaultGlyphForAction(cfg.action));
   applyActionButtonPalette(*button, cfg, panelCardOpacity());
   button->setDirection(FlexDirection::Vertical);
@@ -768,6 +771,16 @@ bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
   if (m_visibleButtons.empty()) {
     return false;
   }
+
+  for (std::size_t i = 0; i < m_visibleEntries.size(); ++i) {
+    const auto& cfg = m_visibleEntries[i];
+    if (cfg.shortcut.has_value() && keyChordMatches(*cfg.shortcut, sym, modifiers)) {
+      PanelManager::instance().close();
+      invokeEntry(cfg);
+      return true;
+    }
+  }
+
   const std::size_t lastIndex = m_visibleButtons.size() - 1;
 
   if (KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {

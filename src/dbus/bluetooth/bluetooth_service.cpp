@@ -19,13 +19,13 @@ namespace {
 
   constexpr Logger kLog("bluetooth");
 
-  const sdbus::ServiceName k_bluezBusName{"org.bluez"};
-  const sdbus::ObjectPath k_rootPath{"/"};
-  constexpr auto k_adapterInterface = "org.bluez.Adapter1";
-  constexpr auto k_deviceInterface = "org.bluez.Device1";
-  constexpr auto k_batteryInterface = "org.bluez.Battery1";
-  constexpr auto k_objectManagerInterface = "org.freedesktop.DBus.ObjectManager";
-  constexpr auto k_propertiesInterface = "org.freedesktop.DBus.Properties";
+  const sdbus::ServiceName kBluezBusName{"org.bluez"};
+  const sdbus::ObjectPath kRootPath{"/"};
+  constexpr auto kAdapterInterface = "org.bluez.Adapter1";
+  constexpr auto kDeviceInterface = "org.bluez.Device1";
+  constexpr auto kBatteryInterface = "org.bluez.Battery1";
+  constexpr auto kObjectManagerInterface = "org.freedesktop.DBus.ObjectManager";
+  constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
 
   using InterfaceProps = std::map<std::string, sdbus::Variant>;
   using ObjectInterfaces = std::map<std::string, InterfaceProps>;
@@ -254,13 +254,13 @@ struct BluetoothService::Impl {
     }
     std::unique_ptr<sdbus::IProxy> proxy;
     try {
-      proxy = sdbus::createProxy(bus.connection(), k_bluezBusName, sdbus::ObjectPath{path});
+      proxy = sdbus::createProxy(bus.connection(), kBluezBusName, sdbus::ObjectPath{path});
     } catch (const sdbus::Error& e) {
       kLog.debug("proxy create failed {}: {}", path, e.what());
       return nullptr;
     }
     proxy->uponSignal("PropertiesChanged")
-        .onInterface(k_propertiesInterface)
+        .onInterface(kPropertiesInterface)
         .call([this, objectPath = path](const std::string& interfaceName, const InterfaceProps& changed,
                                         const std::vector<std::string>& /*invalidated*/) {
           onPropertiesChanged(objectPath, interfaceName, changed);
@@ -275,18 +275,18 @@ struct BluetoothService::Impl {
   void onInterfacesAdded(const sdbus::ObjectPath& path, const ObjectInterfaces& interfaces) {
     bool stateDirty = false;
     bool devicesDirty = false;
-    if (auto it = interfaces.find(k_adapterInterface); it != interfaces.end()) {
+    if (auto it = interfaces.find(kAdapterInterface); it != interfaces.end()) {
       if (adapterPath.empty()) {
         adoptAdapter(path, it->second);
         stateDirty = true;
       }
     }
-    if (auto it = interfaces.find(k_deviceInterface); it != interfaces.end()) {
+    if (auto it = interfaces.find(kDeviceInterface); it != interfaces.end()) {
       adoptDevice(path, it->second);
       ensureObjectProxy(path);
       devicesDirty = true;
     }
-    if (auto it = interfaces.find(k_batteryInterface); it != interfaces.end()) {
+    if (auto it = interfaces.find(kBatteryInterface); it != interfaces.end()) {
       if (auto* dev = self.findDevice(path)) {
         mergeBatteryProps(it->second, *dev);
         devicesDirty = true;
@@ -305,20 +305,20 @@ struct BluetoothService::Impl {
     bool stateDirty = false;
     bool devicesDirty = false;
     for (const auto& iface : interfaces) {
-      if (iface == k_adapterInterface && std::string(path) == adapterPath) {
+      if (iface == kAdapterInterface && std::string(path) == adapterPath) {
         adapter.reset();
         adapterPath.clear();
         self.m_state = BluetoothState{};
         stateDirty = true;
         dropObjectProxy(path);
-      } else if (iface == k_deviceInterface) {
+      } else if (iface == kDeviceInterface) {
         auto& vec = self.m_devices;
         vec.erase(std::remove_if(vec.begin(), vec.end(),
                                  [&](const BluetoothDeviceInfo& d) { return d.path == std::string(path); }),
                   vec.end());
         devicesDirty = true;
         dropObjectProxy(path);
-      } else if (iface == k_batteryInterface) {
+      } else if (iface == kBatteryInterface) {
         if (auto* dev = self.findDevice(path)) {
           dev->hasBattery = false;
           dev->batteryPercent = 0;
@@ -336,7 +336,7 @@ struct BluetoothService::Impl {
 
   void onPropertiesChanged(const std::string& objectPath, const std::string& interfaceName,
                            const InterfaceProps& changed) {
-    if (interfaceName == k_adapterInterface && objectPath == adapterPath) {
+    if (interfaceName == kAdapterInterface && objectPath == adapterPath) {
       BluetoothState next = self.m_state;
       readAdapterProps(changed, next);
       next.adapterPresent = true;
@@ -352,7 +352,7 @@ struct BluetoothService::Impl {
       }
       return;
     }
-    if (interfaceName == k_deviceInterface) {
+    if (interfaceName == kDeviceInterface) {
       if (auto* dev = self.findDevice(objectPath)) {
         BluetoothDeviceInfo updated = *dev;
         mergeDeviceProps(changed, updated);
@@ -363,7 +363,7 @@ struct BluetoothService::Impl {
       }
       return;
     }
-    if (interfaceName == k_batteryInterface) {
+    if (interfaceName == kBatteryInterface) {
       if (auto* dev = self.findDevice(objectPath)) {
         BluetoothDeviceInfo updated = *dev;
         mergeBatteryProps(changed, updated);
@@ -378,7 +378,7 @@ struct BluetoothService::Impl {
   void adoptAdapter(const sdbus::ObjectPath& path, const InterfaceProps& props) {
     adapterPath = path;
     try {
-      adapter = sdbus::createProxy(bus.connection(), k_bluezBusName, path);
+      adapter = sdbus::createProxy(bus.connection(), kBluezBusName, path);
     } catch (const sdbus::Error& e) {
       kLog.warn("adapter proxy failed: {}", e.what());
       adapter.reset();
@@ -402,17 +402,17 @@ struct BluetoothService::Impl {
 
   void seedFromManagedObjects(const ManagedObjects& objects) {
     for (const auto& [path, interfaces] : objects) {
-      if (auto it = interfaces.find(k_adapterInterface); it != interfaces.end()) {
+      if (auto it = interfaces.find(kAdapterInterface); it != interfaces.end()) {
         if (adapterPath.empty()) {
           adoptAdapter(path, it->second);
         }
       }
     }
     for (const auto& [path, interfaces] : objects) {
-      if (auto it = interfaces.find(k_deviceInterface); it != interfaces.end()) {
+      if (auto it = interfaces.find(kDeviceInterface); it != interfaces.end()) {
         adoptDevice(path, it->second);
         ensureObjectProxy(path);
-        if (auto battIt = interfaces.find(k_batteryInterface); battIt != interfaces.end()) {
+        if (auto battIt = interfaces.find(kBatteryInterface); battIt != interfaces.end()) {
           if (auto* dev = self.findDevice(path)) {
             mergeBatteryProps(battIt->second, *dev);
           }
@@ -431,15 +431,15 @@ struct BluetoothService::Impl {
 };
 
 BluetoothService::BluetoothService(SystemBus& bus) : m_impl(std::make_unique<Impl>(*this, bus)) {
-  m_impl->root = sdbus::createProxy(bus.connection(), k_bluezBusName, k_rootPath);
+  m_impl->root = sdbus::createProxy(bus.connection(), kBluezBusName, kRootPath);
 
   m_impl->root->uponSignal("InterfacesAdded")
-      .onInterface(k_objectManagerInterface)
+      .onInterface(kObjectManagerInterface)
       .call([this](const sdbus::ObjectPath& path, const ObjectInterfaces& interfaces) {
         m_impl->onInterfacesAdded(path, interfaces);
       });
   m_impl->root->uponSignal("InterfacesRemoved")
-      .onInterface(k_objectManagerInterface)
+      .onInterface(kObjectManagerInterface)
       .call([this](const sdbus::ObjectPath& path, const std::vector<std::string>& interfaces) {
         m_impl->onInterfacesRemoved(path, interfaces);
       });
@@ -457,7 +457,7 @@ void BluetoothService::refresh() {
     return;
   }
   m_impl->root->callMethodAsync("GetManagedObjects")
-      .onInterface(k_objectManagerInterface)
+      .onInterface(kObjectManagerInterface)
       .uponReplyInvoke([this](std::optional<sdbus::Error> err, ManagedObjects objects) {
         if (err.has_value()) {
           kLog.debug("GetManagedObjects failed: {}", err->what());
@@ -503,10 +503,10 @@ void BluetoothService::setPowered(bool enabled) {
   try {
     if (!enabled && m_state.discovering) {
       m_impl->adapter->callMethodAsync("StopDiscovery")
-          .onInterface(k_adapterInterface)
+          .onInterface(kAdapterInterface)
           .uponReplyInvoke([](std::optional<sdbus::Error>) {});
     }
-    m_impl->adapter->setProperty("Powered").onInterface(k_adapterInterface).toValue(enabled);
+    m_impl->adapter->setProperty("Powered").onInterface(kAdapterInterface).toValue(enabled);
   } catch (const sdbus::Error& e) {
     if (m_pendingLocalPowered == enabled) {
       m_pendingLocalPowered.reset();
@@ -520,7 +520,7 @@ void BluetoothService::setDiscoverable(bool enabled) {
     return;
   }
   try {
-    m_impl->adapter->setProperty("Discoverable").onInterface(k_adapterInterface).toValue(enabled);
+    m_impl->adapter->setProperty("Discoverable").onInterface(kAdapterInterface).toValue(enabled);
   } catch (const sdbus::Error& e) {
     kLog.warn("setDiscoverable failed: {}", e.what());
   }
@@ -531,7 +531,7 @@ void BluetoothService::setPairable(bool enabled) {
     return;
   }
   try {
-    m_impl->adapter->setProperty("Pairable").onInterface(k_adapterInterface).toValue(enabled);
+    m_impl->adapter->setProperty("Pairable").onInterface(kAdapterInterface).toValue(enabled);
   } catch (const sdbus::Error& e) {
     kLog.warn("setPairable failed: {}", e.what());
   }
@@ -543,7 +543,7 @@ void BluetoothService::startDiscovery() {
   }
   try {
     m_impl->adapter->callMethodAsync("StartDiscovery")
-        .onInterface(k_adapterInterface)
+        .onInterface(kAdapterInterface)
         .uponReplyInvoke([](std::optional<sdbus::Error> err) {
           if (err.has_value()) {
             kLog.warn("StartDiscovery failed: {}", err->what());
@@ -560,7 +560,7 @@ void BluetoothService::stopDiscovery() {
   }
   try {
     m_impl->adapter->callMethodAsync("StopDiscovery")
-        .onInterface(k_adapterInterface)
+        .onInterface(kAdapterInterface)
         .uponReplyInvoke([](std::optional<sdbus::Error> err) {
           if (err.has_value()) {
             kLog.debug("StopDiscovery failed: {}", err->what());
@@ -582,7 +582,7 @@ bool BluetoothService::connect(const std::string& devicePath) {
   }
   try {
     proxy->callMethodAsync("Connect")
-        .onInterface(k_deviceInterface)
+        .onInterface(kDeviceInterface)
         .uponReplyInvoke([this, devicePath](std::optional<sdbus::Error> err) {
           if (err.has_value()) {
             kLog.warn("Device.Connect failed {}: {}", devicePath, err->what());
@@ -610,7 +610,7 @@ bool BluetoothService::disconnectDevice(const std::string& devicePath) {
   }
   try {
     proxy->callMethodAsync("Disconnect")
-        .onInterface(k_deviceInterface)
+        .onInterface(kDeviceInterface)
         .uponReplyInvoke([devicePath](std::optional<sdbus::Error> err) {
           if (err.has_value()) {
             kLog.warn("Device.Disconnect failed {}: {}", devicePath, err->what());
@@ -634,7 +634,7 @@ bool BluetoothService::pair(const std::string& devicePath) {
   }
   try {
     proxy->callMethodAsync("Pair")
-        .onInterface(k_deviceInterface)
+        .onInterface(kDeviceInterface)
         .uponReplyInvoke([this, devicePath](std::optional<sdbus::Error> err) {
           if (err.has_value()) {
             kLog.warn("Device.Pair failed {}: {}", devicePath, err->what());
@@ -662,7 +662,7 @@ bool BluetoothService::cancelPair(const std::string& devicePath) {
   }
   try {
     proxy->callMethodAsync("CancelPairing")
-        .onInterface(k_deviceInterface)
+        .onInterface(kDeviceInterface)
         .uponReplyInvoke([devicePath](std::optional<sdbus::Error> err) {
           if (err.has_value()) {
             kLog.debug("CancelPairing failed {}: {}", devicePath, err->what());
@@ -681,7 +681,7 @@ void BluetoothService::setTrusted(const std::string& devicePath, bool trusted) {
     return;
   }
   try {
-    proxy->setProperty("Trusted").onInterface(k_deviceInterface).toValue(trusted);
+    proxy->setProperty("Trusted").onInterface(kDeviceInterface).toValue(trusted);
   } catch (const sdbus::Error& e) {
     kLog.warn("setTrusted failed {}: {}", devicePath, e.what());
   }
@@ -693,7 +693,7 @@ void BluetoothService::forget(const std::string& devicePath) {
   }
   try {
     m_impl->adapter->callMethodAsync("RemoveDevice")
-        .onInterface(k_adapterInterface)
+        .onInterface(kAdapterInterface)
         .withArguments(sdbus::ObjectPath{devicePath})
         .uponReplyInvoke([devicePath](std::optional<sdbus::Error> err) {
           if (err.has_value()) {

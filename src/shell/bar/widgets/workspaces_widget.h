@@ -24,7 +24,7 @@ public:
 
   WorkspacesWidget(CompositorPlatform& platform, wl_output* output, DisplayMode displayMode, ColorSpec focusedColor,
                    ColorSpec occupiedColor, ColorSpec emptyColor, std::size_t maxLabelChars, bool hideWhenEmpty,
-                   float pillScale);
+                   float pillScale, bool minimal);
   ~WorkspacesWidget() override;
 
   void create() override;
@@ -45,6 +45,7 @@ private:
 
   [[nodiscard]] static std::optional<std::size_t> numericWorkspaceId(const Workspace& workspace);
   [[nodiscard]] std::string workspaceLabel(const Workspace& workspace, std::size_t displayIndex) const;
+  [[nodiscard]] DisplayMode effectiveDisplayMode() const noexcept;
   void syncWidgetVisibility(bool showWidget);
 
   struct Item {
@@ -56,6 +57,8 @@ private:
     bool active = false;
     float inactiveWidth = 0.0f;
     float activeWidth = 0.0f;
+    float inkCenterOffset = 0.0f;
+    float inkVCenterOffset = 0.0f;
     float fromX = 0.0f;
     float fromWidth = 0.0f;
     float targetX = 0.0f;
@@ -75,6 +78,7 @@ private:
   std::size_t m_maxLabelChars = 1;
   bool m_hideWhenEmpty = false;
   float m_pillScale = 1.0f;
+  bool m_minimal = false;
   Node* m_container = nullptr;
   std::vector<Workspace> m_cachedState;
   std::vector<Item> m_items;

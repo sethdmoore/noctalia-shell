@@ -772,8 +772,12 @@ bool NiriWorkspaceBackend::applyWindowFields(const nlohmann::json& json, WindowS
 
   bool changed = false;
   if (json.contains("workspace_id")) {
-    state.workspaceId = jsonOptionalUnsigned(json, "workspace_id");
-    changed = true;
+    if (const auto workspaceId = jsonOptionalUnsigned(json, "workspace_id"); workspaceId.has_value()) {
+      state.workspaceId = workspaceId;
+      changed = true;
+    }
+    // Null workspace_id is common while a window is interactively moved; keep the
+    // last known workspace so shell consumers do not treat the window as unassigned.
   }
 
   if (json.contains("app_id") || json.contains("class")) {

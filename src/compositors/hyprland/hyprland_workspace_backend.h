@@ -39,9 +39,12 @@ public:
   [[nodiscard]] std::unordered_map<std::string, std::vector<std::string>>
   appIdsByWorkspace(wl_output* output) const override;
   [[nodiscard]] std::vector<WorkspaceWindow> workspaceWindows(wl_output* output) const override;
+  [[nodiscard]] std::optional<std::string> focusedWindowId() const;
+  void focusWindow(const std::string& windowId) override;
   void cleanup() override;
   void notifyCleanup();
   void notifyChanged();
+  void syncFromCompositor();
 
   [[nodiscard]] int pollFd() const noexcept override;
   void dispatchPoll(short revents) override;
@@ -71,6 +74,7 @@ private:
   void refreshMonitors();
   void refreshClients();
   void recomputeWorkspaceFlags();
+  void ensureSnapshotFresh() const;
 
   void handleEvent(std::string_view event, std::string_view data);
   void handleFocusedMonitor(std::string_view monitorName, int workspaceId);
@@ -89,6 +93,7 @@ private:
   std::vector<WorkspaceState> m_workspaces;
   std::unordered_map<std::uint64_t, ToplevelState> m_toplevels;
   std::unordered_map<std::string, int> m_activeWorkspaceByMonitor;
+  std::string m_focusedWindowId;
   std::size_t m_nextOrdinal = 0;
   ChangeCallback m_changeCallback;
 };

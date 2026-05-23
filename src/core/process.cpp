@@ -575,8 +575,8 @@ namespace {
     }
 #endif
 
-    if (!workingDir.empty()) {
-      (void)::chdir(workingDir.c_str());
+    if (!workingDir.empty() && ::chdir(workingDir.c_str()) != 0) {
+      ::_exit(126);
     }
 
     if (!activationToken.empty()) {

@@ -29,7 +29,7 @@
 namespace {
 
   constexpr Logger kLog("polkit");
-  constexpr auto k_agentObjectPath = "/org/noctalia/PolkitAuthenticationAgent";
+  constexpr auto kAgentObjectPath = "/org/noctalia/PolkitAuthenticationAgent";
 
   std::optional<std::string> usernameFromUid(uid_t uid) {
     passwd pwd{};
@@ -376,7 +376,7 @@ struct PolkitAgent::Impl {
       GError* registerError = nullptr;
       gpointer handle =
           polkit_agent_listener_register(POLKIT_AGENT_LISTENER(listener), POLKIT_AGENT_REGISTER_FLAGS_NONE, subject,
-                                         k_agentObjectPath, registerCancellable, &registerError);
+                                         kAgentObjectPath, registerCancellable, &registerError);
       g_object_unref(subject);
 
       std::string message;
@@ -462,7 +462,7 @@ struct PolkitAgent::Impl {
     }
 
     registered = true;
-    kLog.info("registered Polkit authentication agent at {}", k_agentObjectPath);
+    kLog.info("registered Polkit authentication agent at {}", kAgentObjectPath);
     if (readyCallback) {
       readyCallback(true, std::string{});
     }

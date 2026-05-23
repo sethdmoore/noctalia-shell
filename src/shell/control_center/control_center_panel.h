@@ -78,6 +78,7 @@ public:
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
 
 private:
+  void onPanelBordersChanged(bool enabled) override;
   void onPanelCardOpacityChanged(float opacity) override;
   void doLayout(Renderer& renderer, float width, float height) override;
   void doUpdate(Renderer& renderer) override;
@@ -121,7 +122,10 @@ private:
 
   void selectTab(TabId tab);
   void scheduleMprisRefreshFor(TabId tab);
-  [[nodiscard]] static TabId tabFromContext(std::string_view context);
+  void syncTabVisibility();
+  [[nodiscard]] bool isTabVisible(TabId tab) const;
+  [[nodiscard]] TabId firstVisibleTab() const;
+  [[nodiscard]] TabId tabFromContext(std::string_view context) const;
   [[nodiscard]] static std::size_t tabIndex(TabId id);
 
   // Tab instances (long-lived, survive panel open/close cycles)

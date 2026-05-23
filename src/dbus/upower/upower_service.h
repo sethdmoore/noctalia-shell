@@ -13,6 +13,18 @@ namespace sdbus {
   class IProxy;
 } // namespace sdbus
 
+enum class UPowerDeviceType : std::uint32_t {
+  Unknown = 0,
+  LinePower = 1,
+  Battery = 2,
+  Ups = 3,
+  Monitor = 4,
+  Mouse = 5,
+  Keyboard = 6,
+  Pda = 7,
+  Phone = 8,
+};
+
 enum class BatteryState : std::uint8_t {
   Unknown = 0,
   Charging = 1,
@@ -42,12 +54,14 @@ struct UPowerDeviceInfo {
   std::string vendor;
   std::string model;
   std::string serial;
-  std::uint32_t type = 0;
+  UPowerDeviceType type = UPowerDeviceType::Unknown;
   bool powerSupply = false;
   bool isPresent = false;
   UPowerState state;
 
   bool operator==(const UPowerDeviceInfo&) const = default;
+
+  [[nodiscard]] bool isLaptopBattery() const { return type == UPowerDeviceType::Battery && powerSupply; }
 };
 
 class UPowerService {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config/config_service.h"
+#include "scripting/scripted_widget_manifest.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -16,6 +17,7 @@ namespace settings {
     BuiltIn,
     Named,
     Unknown,
+    Preset, // a bundled scripted widget discovered via its Lua manifest
   };
 
   struct WidgetTypeSpec {
@@ -38,6 +40,7 @@ namespace settings {
     std::string label;
     std::string description;
     std::string icon;
+    std::string script = {}; // asset-relative script path for Preset entries; empty otherwise
     WidgetReferenceKind kind = WidgetReferenceKind::Unknown;
   };
 
@@ -53,8 +56,8 @@ namespace settings {
   };
 
   struct WidgetSettingSelectOption {
-    std::string_view value;
-    std::string_view labelKey;
+    std::string value;
+    std::string labelKey; // i18n key, unless the owning spec sets `literalLabels` (then a literal label)
   };
 
   struct WidgetSettingVisibilityCondition {
@@ -75,6 +78,9 @@ namespace settings {
     std::string key;
     std::string labelKey;
     std::string descriptionKey;
+    std::string literalLabel;       // when non-empty, used verbatim instead of tr(labelKey)
+    std::string literalDescription; // when non-empty, used verbatim instead of tr(descriptionKey)
+    bool literalLabels = false;     // when true, option.labelKey holds a literal label (not an i18n key)
     WidgetSettingValueType valueType = WidgetSettingValueType::String;
     WidgetSettingValue defaultValue = std::string{};
     std::optional<double> minValue;
@@ -96,9 +102,14 @@ namespace settings {
   [[nodiscard]] std::vector<WidgetPickerEntry> widgetPickerEntries(const Config& cfg);
   [[nodiscard]] std::vector<WidgetSettingSpec> commonWidgetSettingSpecs();
   [[nodiscard]] std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type);
+  // Config-aware variant: for scripted widgets whose `script` declares a Lua manifest,
+  // returns the manifest-driven settings. Falls back to the type-only specs otherwise.
+  [[nodiscard]] std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type, const WidgetConfig* config);
+  // Build settings specs from a scripted widget's Lua manifest.
+  [[nodiscard]] std::vector<WidgetSettingSpec> manifestSettingSpecs(const scripting::ScriptWidgetManifest& manifest);
 
-  [[nodiscard]] const WidgetSettingSpec* findWidgetSettingSpec(std::string_view widgetType,
-                                                               std::string_view settingKey);
+  [[nodiscard]] std::optional<WidgetSettingSpec> findWidgetSettingSpec(std::string_view widgetType,
+                                                                       std::string_view settingKey);
   [[nodiscard]] bool configOverrideValueMatchesWidgetSetting(const ConfigOverrideValue& overrideValue,
                                                              const WidgetSettingValue& settingValue);
   [[nodiscard]] bool widgetOverrideValueMatchesRegistryDefault(std::string_view widgetType, std::string_view settingKey,

@@ -318,7 +318,7 @@ void KeyboardLayoutWidget::create() {
   area->addChild(std::move(glyph));
 
   auto label = std::make_unique<Label>();
-  label->setBold(true);
+  label->setFontWeight(labelFontWeight());
   label->setFontSize(Style::fontSizeBody * m_contentScale);
   label->setText("--");
   m_label = label.get();
@@ -354,7 +354,7 @@ void KeyboardLayoutWidget::doLayout(Renderer& renderer, float containerWidth, fl
   m_label->setTextAlign(m_isVertical ? TextAlign::Center : TextAlign::Start);
   if (!m_hideLabel) {
     const float stableLabelWidth =
-        std::round(renderer.measureText(kVerticalStableLabel, m_label->fontSize(), true).width);
+        std::round(renderer.measureText(kVerticalStableLabel, m_label->fontSize(), labelFontWeight()).width);
     m_label->setMinWidth(m_isVertical ? std::min(containerWidth, stableLabelWidth) : 0.0f);
     m_label->measure(renderer);
   }
@@ -441,6 +441,15 @@ void KeyboardLayoutWidget::sync(Renderer& renderer) {
     m_label->setText(layoutLabel);
     m_label->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
     m_label->measure(renderer);
+  }
+
+  if (auto* area = static_cast<InputArea*>(root()); area != nullptr) {
+    if (m_hideLabel) {
+      const std::string tooltipText = layoutName.empty() ? layoutLabel : layoutName;
+      area->setTooltip(tooltipText);
+    } else {
+      area->clearTooltip();
+    }
   }
 
   if (auto* node = root(); node != nullptr) {

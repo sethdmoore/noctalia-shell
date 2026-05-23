@@ -58,7 +58,8 @@ public:
   void closeAllInstances();
   void show();
   void hide();
-  [[nodiscard]] bool isVisible() const noexcept { return !m_forceHidden; }
+  void toggle();
+  [[nodiscard]] bool isVisible() const noexcept;
   void onOutputChange();
   void onSecondTick();
   void refresh();
@@ -90,6 +91,9 @@ public:
   void registerIpc(IpcService& ipc);
 
 private:
+  void applyIpcVisibility(bool visible);
+  void setInstanceIpcVisible(BarInstance& instance, bool visible);
+  [[nodiscard]] bool instanceEffectivelyVisible(const BarInstance& instance) const noexcept;
   static void tickWidgets(std::vector<std::unique_ptr<Widget>>& widgets, float deltaMs);
   [[nodiscard]] static bool widgetsNeedFrameTick(const std::vector<std::unique_ptr<Widget>>& widgets);
   [[nodiscard]] static bool instanceNeedsFrameTick(const BarInstance& instance);
@@ -104,6 +108,14 @@ private:
   void updateWidgets(BarInstance& instance);
   void applyBarCompositorBlur(BarInstance& instance) const;
   void syncBarSlideLayerTransform(BarInstance& instance) const;
+  void syncBarAutoHideInputRegion(BarInstance& instance) const;
+  void syncBarExclusiveZone(BarInstance& instance);
+  void syncBarSurfaceChrome(BarInstance& instance);
+  void clearInstancePointerState(BarInstance& instance);
+  [[nodiscard]] bool instanceAcceptsPointerInput(const BarInstance& instance) const noexcept;
+  [[nodiscard]] bool shouldReserveExclusiveZone(const BarInstance& instance) const noexcept;
+  [[nodiscard]] bool barContentVisuallyShown(const BarInstance& instance) const noexcept;
+  void revealAutoHideBar(BarInstance& instance);
   void startHideFadeOut(BarInstance& instance);
   static void applyBackgroundPalette(BarInstance& instance);
   [[nodiscard]] std::string dispatchScriptedWidgetIpc(std::string_view args);
@@ -111,7 +123,6 @@ private:
   [[nodiscard]] BarInstance* instanceForOutput(wl_output* output) const noexcept;
   [[nodiscard]] BarInstance* instanceForBar(wl_output* output, std::string_view barName) const noexcept;
 
-  bool m_forceHidden = false;
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
   NotificationManager* m_notifications = nullptr;

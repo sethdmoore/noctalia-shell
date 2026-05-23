@@ -48,7 +48,7 @@ void DesktopMediaPlayerWidget::create() {
   rootNode->addChild(std::move(artwork));
 
   auto title = std::make_unique<Label>();
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setMaxLines(1);
   title->setColor(m_color);
   m_title = title.get();

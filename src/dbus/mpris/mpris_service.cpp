@@ -35,18 +35,18 @@ std::string joinedArtists(const std::vector<std::string>& artists) {
 
 namespace {
 
-  static constexpr auto k_dbus_interface = "org.freedesktop.DBus";
-  static constexpr auto k_properties_interface = "org.freedesktop.DBus.Properties";
-  static constexpr auto k_mpris_root_interface = "org.mpris.MediaPlayer2";
-  static constexpr auto k_mpris_player_interface = "org.mpris.MediaPlayer2.Player";
-  static constexpr auto k_noctalia_mpris_interface = "dev.noctalia.Mpris";
-  static constexpr auto k_properties_debounce_window = std::chrono::milliseconds{120};
-  static constexpr auto k_metadata_stabilize_window = std::chrono::milliseconds{900};
-  static const sdbus::ServiceName k_dbus_name{"org.freedesktop.DBus"};
-  static const sdbus::ObjectPath k_dbus_path{"/org/freedesktop/DBus"};
-  static const sdbus::ObjectPath k_mpris_path{"/org/mpris/MediaPlayer2"};
-  static const sdbus::ServiceName k_noctalia_mpris_bus_name{"dev.noctalia.Mpris"};
-  static const sdbus::ObjectPath k_noctalia_mpris_object_path{"/dev/noctalia/Mpris"};
+  static constexpr auto kDbusInterface = "org.freedesktop.DBus";
+  static constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
+  static constexpr auto kMprisRootInterface = "org.mpris.MediaPlayer2";
+  static constexpr auto kMprisPlayerInterface = "org.mpris.MediaPlayer2.Player";
+  static constexpr auto kNoctaliaMprisInterface = "dev.noctalia.Mpris";
+  static constexpr auto kPropertiesDebounceWindow = std::chrono::milliseconds{120};
+  static constexpr auto kMetadataStabilizeWindow = std::chrono::milliseconds{900};
+  static const sdbus::ServiceName kDbusName{"org.freedesktop.DBus"};
+  static const sdbus::ObjectPath kDbusPath{"/org/freedesktop/DBus"};
+  static const sdbus::ObjectPath kMprisPath{"/org/mpris/MediaPlayer2"};
+  static const sdbus::ServiceName kNoctaliaMprisBusName{"dev.noctalia.Mpris"};
+  static const sdbus::ObjectPath kNoctaliaMprisObjectPath{"/dev/noctalia/Mpris"};
 
   bool is_mpris_bus_name(std::string_view name) { return name.starts_with("org.mpris.MediaPlayer2."); }
 
@@ -312,29 +312,29 @@ namespace {
   }
 
   constexpr Logger kLog("mpris");
-  constexpr auto k_position_retry_interval = std::chrono::milliseconds{1000};
-  constexpr auto k_position_candidate_retry_interval = std::chrono::milliseconds{250};
-  constexpr auto k_position_retry_initial_backoff = std::chrono::milliseconds{2000};
-  constexpr auto k_position_retry_max_backoff = std::chrono::milliseconds{30'000};
+  constexpr auto kPositionRetryInterval = std::chrono::milliseconds{1000};
+  constexpr auto kPositionCandidateRetryInterval = std::chrono::milliseconds{250};
+  constexpr auto kPositionRetryInitialBackoff = std::chrono::milliseconds{2000};
+  constexpr auto kPositionRetryMaxBackoff = std::chrono::milliseconds{30'000};
   // Threshold for consecutive failures while fetching full player properties in addOrRefreshPlayer.
-  constexpr int k_player_properties_failure_threshold = 5;
-  constexpr auto k_recent_track_change_guard_window = std::chrono::milliseconds{8000};
-  constexpr auto k_recent_track_change_slack = std::chrono::milliseconds{750};
-  constexpr auto k_position_candidate_match_window = std::chrono::milliseconds{2500};
-  constexpr std::int64_t k_position_candidate_tolerance_us = 1500000;
-  constexpr std::int64_t k_position_candidate_min_progress_us = 250000;
-  constexpr auto k_seek_pause_grace_window = std::chrono::milliseconds{1500};
-  constexpr std::int64_t k_paused_same_track_position_jump_tolerance_us = 3000000;
-  constexpr auto k_no_signal_pause_recovery_window = std::chrono::milliseconds{6000};
-  constexpr std::int64_t k_stale_rebase_clear_slack_us = 5000000;
-  constexpr std::int64_t k_previous_track_continuation_slack_us = 15000000;
-  constexpr std::int64_t k_pause_recovery_min_jump_us = 10000000;
-  constexpr std::int64_t k_track_length_position_slack_us = 5000000;
-  constexpr auto k_initial_position_projection_grace_window = std::chrono::milliseconds{1250};
-  constexpr std::int64_t k_initial_position_projection_grace_ceiling_us = 5000000;
+  constexpr int kPlayerPropertiesFailureThreshold = 5;
+  constexpr auto kRecentTrackChangeGuardWindow = std::chrono::milliseconds{8000};
+  constexpr auto kRecentTrackChangeSlack = std::chrono::milliseconds{750};
+  constexpr auto kPositionCandidateMatchWindow = std::chrono::milliseconds{2500};
+  constexpr std::int64_t kPositionCandidateToleranceUs = 1500000;
+  constexpr std::int64_t kPositionCandidateMinProgressUs = 250000;
+  constexpr auto kSeekPauseGraceWindow = std::chrono::milliseconds{1500};
+  constexpr std::int64_t kPausedSameTrackPositionJumpToleranceUs = 3000000;
+  constexpr auto kNoSignalPauseRecoveryWindow = std::chrono::milliseconds{6000};
+  constexpr std::int64_t kStaleRebaseClearSlackUs = 5000000;
+  constexpr std::int64_t kPreviousTrackContinuationSlackUs = 15000000;
+  constexpr std::int64_t kPauseRecoveryMinJumpUs = 10000000;
+  constexpr std::int64_t kTrackLengthPositionSlackUs = 5000000;
+  constexpr auto kInitialPositionProjectionGraceWindow = std::chrono::milliseconds{1250};
+  constexpr std::int64_t kInitialPositionProjectionGraceCeilingUs = 5000000;
 
   bool isPlausibleTrackPosition(std::int64_t positionUs, std::int64_t lengthUs) {
-    return lengthUs <= 0 || positionUs <= lengthUs + k_track_length_position_slack_us;
+    return lengthUs <= 0 || positionUs <= lengthUs + kTrackLengthPositionSlackUs;
   }
 
   std::string normalizeFilterToken(std::string_view value) { return StringUtils::toLower(StringUtils::trim(value)); }
@@ -342,7 +342,7 @@ namespace {
 } // namespace
 
 MprisService::MprisService(SessionBus& bus)
-    : m_bus(bus), m_dbusProxy(sdbus::createProxy(bus.connection(), k_dbus_name, k_dbus_path)) {
+    : m_bus(bus), m_dbusProxy(sdbus::createProxy(bus.connection(), kDbusName, kDbusPath)) {
   registerControlApi();
   registerBusSignals();
   discoverPlayers();
@@ -387,8 +387,8 @@ void MprisService::refreshPlayerPosition(const std::string& busName, bool notify
   const std::weak_ptr<void> aliveGuard = m_aliveGuard;
   try {
     proxyIt->second->callMethodAsync("Get")
-        .onInterface(k_properties_interface)
-        .withArguments(std::string{k_mpris_player_interface}, std::string{"Position"})
+        .onInterface(kPropertiesInterface)
+        .withArguments(std::string{kMprisPlayerInterface}, std::string{"Position"})
         .uponReplyInvoke(
             [this, aliveGuard, busName, notifyChange](std::optional<sdbus::Error> err, sdbus::Variant value) {
               if (aliveGuard.expired()) {
@@ -413,7 +413,7 @@ void MprisService::refreshPlayerPosition(const std::string& busName, bool notify
 
 bool MprisService::shouldRetryPropertiesRefresh(const std::string& busName) const {
   const auto failureIt = m_playerPropertiesFailures.find(busName);
-  return failureIt == m_playerPropertiesFailures.end() || failureIt->second < k_player_properties_failure_threshold;
+  return failureIt == m_playerPropertiesFailures.end() || failureIt->second < kPlayerPropertiesFailureThreshold;
 }
 
 std::chrono::milliseconds MprisService::propertiesRefreshRetryInterval(const std::string& busName,
@@ -451,36 +451,36 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
   const auto now = std::chrono::steady_clock::now();
   const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
   const bool recentLocalSeek =
-      seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= k_seek_pause_grace_window;
+      seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
   auto offsetIt = m_positionOffsetsUs.find(busName);
   std::int64_t offsetUs = offsetIt != m_positionOffsetsUs.end() ? offsetIt->second : 0;
   std::int64_t normalizedUs = std::max<std::int64_t>(0, rawPositionUs - offsetUs);
   const bool hadAuthoritativeSample =
       m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
   const auto trackChangeIt = m_lastLogicalTrackChangeAt.find(busName);
-  const bool guardingRecentTrackChange = trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-                                         now - trackChangeIt->second < k_recent_track_change_guard_window;
+  const bool guardingRecentTrackChange =
+      trackChangeIt != m_lastLogicalTrackChangeAt.end() && now - trackChangeIt->second < kRecentTrackChangeGuardWindow;
   const std::int64_t elapsedSinceTrackChangeUs =
       trackChangeIt != m_lastLogicalTrackChangeAt.end()
           ? std::chrono::duration_cast<std::chrono::microseconds>(now - trackChangeIt->second).count()
           : 0;
   const std::int64_t maxPlausibleTrackPositionUs =
       elapsedSinceTrackChangeUs +
-      std::chrono::duration_cast<std::chrono::microseconds>(k_recent_track_change_slack).count();
+      std::chrono::duration_cast<std::chrono::microseconds>(kRecentTrackChangeSlack).count();
   const auto previousTrackRawIt = m_previousTrackRawPositionUs.find(busName);
   const bool hasPreviousTrackContext = previousTrackRawIt != m_previousTrackRawPositionUs.end();
   const bool looksLikePreviousTrackContinuation =
       hasPreviousTrackContext &&
-      std::llabs(rawPositionUs - previousTrackRawIt->second) <= k_previous_track_continuation_slack_us;
+      std::llabs(rawPositionUs - previousTrackRawIt->second) <= kPreviousTrackContinuationSlackUs;
 
-  if (offsetUs > 0 && !hasPreviousTrackContext && rawPositionUs + k_stale_rebase_clear_slack_us < offsetUs) {
+  if (offsetUs > 0 && !hasPreviousTrackContext && rawPositionUs + kStaleRebaseClearSlackUs < offsetUs) {
     offsetIt->second = 0;
     offsetUs = 0;
     normalizedUs = rawPositionUs;
   }
 
   if (!hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() && offsetUs > 0 &&
-      rawPositionUs + k_stale_rebase_clear_slack_us < offsetUs) {
+      rawPositionUs + kStaleRebaseClearSlackUs < offsetUs) {
     offsetIt->second = 0;
     offsetUs = 0;
     normalizedUs = rawPositionUs;
@@ -497,7 +497,7 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
       }
     }
     if (playerIt->second.playbackStatus != "Stopped" && shouldRetryPropertiesRefresh(busName)) {
-      schedulePositionRefreshRetry(busName, k_position_retry_interval, true);
+      schedulePositionRefreshRetry(busName, kPositionRetryInterval, true);
     }
     return;
   }
@@ -527,18 +527,18 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
   if (hadAuthoritativeSample && playerIt->second.playbackStatus == "Paused" && normalizedUs > 0) {
     const auto pauseIt = m_recentNoSignalPauseAt.find(busName);
     const bool recoveringRecentPause =
-        pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= k_no_signal_pause_recovery_window;
+        pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= kNoSignalPauseRecoveryWindow;
     const std::int64_t pausedJumpUs = std::llabs(normalizedUs - playerIt->second.positionUs);
     if (recoveringRecentPause) {
       if (recentLocalSeek) {
         // A paused seek can legitimately jump without implying playback resumed.
-      } else if (pausedJumpUs < k_pause_recovery_min_jump_us) {
+      } else if (pausedJumpUs < kPauseRecoveryMinJumpUs) {
         return;
       } else {
         playerIt->second.playbackStatus = "Playing";
         m_recentNoSignalPauseAt.erase(pauseIt);
       }
-    } else if (!recentLocalSeek && pausedJumpUs < k_paused_same_track_position_jump_tolerance_us) {
+    } else if (!recentLocalSeek && pausedJumpUs < kPausedSameTrackPositionJumpToleranceUs) {
       return;
     }
   }
@@ -547,9 +547,9 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
     const auto candidateIt = m_pendingPositionCandidateUs.find(busName);
     const auto candidateAtIt = m_pendingPositionCandidateAt.find(busName);
     const bool candidateFresh = candidateAtIt != m_pendingPositionCandidateAt.end() &&
-                                now - candidateAtIt->second <= k_position_candidate_match_window;
+                                now - candidateAtIt->second <= kPositionCandidateMatchWindow;
     bool candidateMatches = candidateIt != m_pendingPositionCandidateUs.end() && candidateFresh &&
-                            std::llabs(candidateIt->second - normalizedUs) <= k_position_candidate_tolerance_us;
+                            std::llabs(candidateIt->second - normalizedUs) <= kPositionCandidateToleranceUs;
 
     if (candidateMatches && playerIt->second.playbackStatus == "Playing") {
       const auto elapsedSinceCandidateUs =
@@ -557,8 +557,8 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
       const std::int64_t progressUs = normalizedUs - candidateIt->second;
       const std::int64_t maxExpectedProgressUs =
           elapsedSinceCandidateUs +
-          std::chrono::duration_cast<std::chrono::microseconds>(k_recent_track_change_slack).count();
-      candidateMatches = progressUs >= k_position_candidate_min_progress_us && progressUs <= maxExpectedProgressUs;
+          std::chrono::duration_cast<std::chrono::microseconds>(kRecentTrackChangeSlack).count();
+      candidateMatches = progressUs >= kPositionCandidateMinProgressUs && progressUs <= maxExpectedProgressUs;
     }
 
     if (!candidateMatches) {
@@ -566,7 +566,7 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
       m_pendingPositionCandidateMatches[busName] = 0;
       m_pendingPositionCandidateAt[busName] = now;
       if (playerIt->second.playbackStatus == "Playing" && shouldRetryPropertiesRefresh(busName)) {
-        schedulePositionRefreshRetry(busName, k_position_candidate_retry_interval, false);
+        schedulePositionRefreshRetry(busName, kPositionCandidateRetryInterval, false);
       }
       return;
     }
@@ -578,7 +578,7 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
         m_pendingPositionCandidateUs[busName] = normalizedUs;
         m_pendingPositionCandidateAt[busName] = now;
         if (shouldRetryPropertiesRefresh(busName)) {
-          schedulePositionRefreshRetry(busName, k_position_candidate_retry_interval, false);
+          schedulePositionRefreshRetry(busName, kPositionCandidateRetryInterval, false);
         }
         return;
       }
@@ -592,7 +592,7 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
         m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
     if (playerIt->second.playbackStatus == "Playing" && !hasAuthoritativeSample &&
         shouldRetryPropertiesRefresh(busName)) {
-      schedulePositionRefreshRetry(busName, k_position_retry_interval, true);
+      schedulePositionRefreshRetry(busName, kPositionRetryInterval, true);
     }
     return;
   }
@@ -634,10 +634,10 @@ std::int64_t MprisService::projectedPositionUs(const MprisPlayerInfo& player) co
       const auto trackChangeIt = m_lastLogicalTrackChangeAt.find(player.busName);
       const bool inInitialTrackWindow =
           trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-          std::chrono::steady_clock::now() - trackChangeIt->second <= k_recent_track_change_guard_window;
+          std::chrono::steady_clock::now() - trackChangeIt->second <= kRecentTrackChangeGuardWindow;
       const bool suppressInitialProjection =
-          inInitialTrackWindow && projectedUs <= k_initial_position_projection_grace_ceiling_us &&
-          std::chrono::steady_clock::now() - it->second <= k_initial_position_projection_grace_window;
+          inInitialTrackWindow && projectedUs <= kInitialPositionProjectionGraceCeilingUs &&
+          std::chrono::steady_clock::now() - it->second <= kInitialPositionProjectionGraceWindow;
       if (suppressInitialProjection) {
         if (player.lengthUs > 0) {
           return std::clamp<std::int64_t>(projectedUs, 0, player.lengthUs);
@@ -831,7 +831,7 @@ bool MprisService::seek(const std::string& busName, int64_t offsetUs) {
 
   try {
     proxyIt->second->callMethodAsync("Seek")
-        .onInterface(k_mpris_player_interface)
+        .onInterface(kMprisPlayerInterface)
         .withArguments(offsetUs)
         .uponReplyInvoke(makeAsyncReplyHandler("seek", busName));
     m_lastSeekCommandAt[busName] = std::chrono::steady_clock::now();
@@ -882,7 +882,7 @@ bool MprisService::setPosition(const std::string& busName, int64_t positionUs) {
 
   try {
     proxyIt->second->callMethodAsync("SetPosition")
-        .onInterface(k_mpris_player_interface)
+        .onInterface(kMprisPlayerInterface)
         .withArguments(sdbus::ObjectPath{it->second.trackId}, positionUs)
         .uponReplyInvoke(makeAsyncReplyHandler("set-position", busName));
     m_lastSeekCommandAt[busName] = std::chrono::steady_clock::now();
@@ -918,8 +918,8 @@ bool MprisService::setVolume(const std::string& busName, double volume) {
 
   try {
     proxyIt->second->callMethodAsync("Set")
-        .onInterface(k_properties_interface)
-        .withArguments(std::string{k_mpris_player_interface}, std::string{"Volume"}, sdbus::Variant{volume})
+        .onInterface(kPropertiesInterface)
+        .withArguments(std::string{kMprisPlayerInterface}, std::string{"Volume"}, sdbus::Variant{volume})
         .uponReplyInvoke(makeAsyncReplyHandler("set-volume", busName));
     return true;
   } catch (const sdbus::Error& e) {
@@ -949,8 +949,8 @@ bool MprisService::setShuffle(const std::string& busName, bool shuffle) {
 
   try {
     proxyIt->second->callMethodAsync("Set")
-        .onInterface(k_properties_interface)
-        .withArguments(std::string{k_mpris_player_interface}, std::string{"Shuffle"}, sdbus::Variant{shuffle})
+        .onInterface(kPropertiesInterface)
+        .withArguments(std::string{kMprisPlayerInterface}, std::string{"Shuffle"}, sdbus::Variant{shuffle})
         .uponReplyInvoke(makeAsyncReplyHandler("set-shuffle", busName));
     return true;
   } catch (const sdbus::Error& e) {
@@ -984,8 +984,8 @@ bool MprisService::setLoopStatus(const std::string& busName, std::string loopSta
 
   try {
     proxyIt->second->callMethodAsync("Set")
-        .onInterface(k_properties_interface)
-        .withArguments(std::string{k_mpris_player_interface}, std::string{"LoopStatus"},
+        .onInterface(kPropertiesInterface)
+        .withArguments(std::string{kMprisPlayerInterface}, std::string{"LoopStatus"},
                        sdbus::Variant{std::move(loopStatus)})
         .uponReplyInvoke(makeAsyncReplyHandler("set-loop-status", busName));
     return true;
@@ -1163,8 +1163,8 @@ const std::vector<std::string>& MprisService::preferredPlayers() const noexcept 
 const std::vector<std::string>& MprisService::blacklist() const noexcept { return m_blacklist; }
 
 void MprisService::registerControlApi() {
-  m_bus.connection().requestName(k_noctalia_mpris_bus_name);
-  m_controlObject = sdbus::createObject(m_bus.connection(), k_noctalia_mpris_object_path);
+  m_bus.connection().requestName(kNoctaliaMprisBusName);
+  m_controlObject = sdbus::createObject(m_bus.connection(), kNoctaliaMprisObjectPath);
 
   m_controlObject
       ->addVTable(
@@ -1341,7 +1341,7 @@ void MprisService::registerControlApi() {
           sdbus::registerMethod("PreviousActive").withOutputParamNames("success").implementedAs([this]() {
             return onPreviousActive();
           }))
-      .forInterface(k_noctalia_mpris_interface);
+      .forInterface(kNoctaliaMprisInterface);
 }
 
 void MprisService::emitPlayersChanged() {
@@ -1350,26 +1350,26 @@ void MprisService::emitPlayersChanged() {
     players.push_back(to_dbus_player(player));
   }
 
-  m_controlObject->emitSignal("PlayersChanged").onInterface(k_noctalia_mpris_interface).withArguments(players);
+  m_controlObject->emitSignal("PlayersChanged").onInterface(kNoctaliaMprisInterface).withArguments(players);
 }
 
 void MprisService::emitActivePlayerChanged() {
   const auto active = activePlayer();
   if (!active.has_value()) {
     m_controlObject->emitSignal("ActivePlayerChanged")
-        .onInterface(k_noctalia_mpris_interface)
+        .onInterface(kNoctaliaMprisInterface)
         .withArguments(false, std::map<std::string, sdbus::Variant>{});
     return;
   }
 
   m_controlObject->emitSignal("ActivePlayerChanged")
-      .onInterface(k_noctalia_mpris_interface)
+      .onInterface(kNoctaliaMprisInterface)
       .withArguments(true, to_dbus_player(*active));
 }
 
 void MprisService::emitTrackChanged(const MprisPlayerInfo& player) {
   m_controlObject->emitSignal("TrackChanged")
-      .onInterface(k_noctalia_mpris_interface)
+      .onInterface(kNoctaliaMprisInterface)
       .withArguments(player.busName, to_dbus_player(player));
 }
 
@@ -1390,7 +1390,7 @@ void MprisService::syncSignals(const std::optional<MprisPlayerInfo>& previousAct
 
 void MprisService::registerBusSignals() {
   m_dbusProxy->uponSignal("NameOwnerChanged")
-      .onInterface(k_dbus_interface)
+      .onInterface(kDbusInterface)
       .call([this](const std::string& name, const std::string& old_owner, const std::string& new_owner) {
         if (!is_mpris_bus_name(name)) {
           return;
@@ -1416,7 +1416,7 @@ void MprisService::discoverPlayers() {
   try {
     const std::weak_ptr<void> aliveGuard = m_aliveGuard;
     m_dbusProxy->callMethodAsync("ListNames")
-        .onInterface(k_dbus_interface)
+        .onInterface(kDbusInterface)
         .uponReplyInvoke([this, aliveGuard](std::optional<sdbus::Error> err, std::vector<std::string> names) {
           if (aliveGuard.expired()) {
             return;
@@ -1502,16 +1502,16 @@ void MprisService::scheduleRecoveryDiscovery() {
 }
 
 void MprisService::addOrRefreshPlayer(const std::string& busName) {
-  auto [proxyIt, inserted] = m_playerProxies.emplace(
-      busName, sdbus::createProxy(m_bus.connection(), sdbus::ServiceName{busName}, k_mpris_path));
+  auto [proxyIt, inserted] =
+      m_playerProxies.emplace(busName, sdbus::createProxy(m_bus.connection(), sdbus::ServiceName{busName}, kMprisPath));
 
   if (inserted) {
     proxyIt->second->uponSignal("PropertiesChanged")
-        .onInterface(k_properties_interface)
+        .onInterface(kPropertiesInterface)
         .call([this, busName](const std::string& interface_name,
                               const std::map<std::string, sdbus::Variant>& changed_properties,
                               const std::vector<std::string>& invalidated_properties) {
-          if (interface_name == k_mpris_root_interface || interface_name == k_mpris_player_interface) {
+          if (interface_name == kMprisRootInterface || interface_name == kMprisPlayerInterface) {
             const bool metadataChanged =
                 changed_properties.contains("Metadata") ||
                 std::ranges::find(invalidated_properties, std::string{"Metadata"}) != invalidated_properties.end();
@@ -1531,7 +1531,7 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
             }
 
             const auto last_it = m_lastPropertiesUpdate.find(busName);
-            if (last_it != m_lastPropertiesUpdate.end() && now - last_it->second < k_properties_debounce_window) {
+            if (last_it != m_lastPropertiesUpdate.end() && now - last_it->second < kPropertiesDebounceWindow) {
               return;
             }
             m_lastPropertiesUpdate[busName] = now;
@@ -1539,7 +1539,7 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
           }
         });
 
-    proxyIt->second->uponSignal("Seeked").onInterface(k_mpris_player_interface).call([this, busName](int64_t posUs) {
+    proxyIt->second->uponSignal("Seeked").onInterface(kMprisPlayerInterface).call([this, busName](int64_t posUs) {
       auto playerIt = m_players.find(busName);
       if (playerIt == m_players.end()) {
         return;
@@ -1553,7 +1553,7 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
       const auto previousTrackRawIt = m_previousTrackRawPositionUs.find(busName);
       const bool looksLikePreviousTrackContinuation =
           previousTrackRawIt != m_previousTrackRawPositionUs.end() &&
-          std::llabs(posUs - previousTrackRawIt->second) <= k_previous_track_continuation_slack_us;
+          std::llabs(posUs - previousTrackRawIt->second) <= kPreviousTrackContinuationSlackUs;
 
       if (looksLikePreviousTrackContinuation) {
         return;
@@ -1572,12 +1572,12 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
       if (playerIt->second.playbackStatus == "Paused" && normalizedUs > 0) {
         const auto pauseIt = m_recentNoSignalPauseAt.find(busName);
         const bool recoveringRecentPause =
-            pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= k_no_signal_pause_recovery_window;
+            pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= kNoSignalPauseRecoveryWindow;
         const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
         const bool recentLocalSeek =
-            seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= k_seek_pause_grace_window;
+            seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
         const std::int64_t pausedJumpUs = std::llabs(normalizedUs - previousPosUs);
-        if (recoveringRecentPause && !recentLocalSeek && pausedJumpUs >= k_pause_recovery_min_jump_us) {
+        if (recoveringRecentPause && !recentLocalSeek && pausedJumpUs >= kPauseRecoveryMinJumpUs) {
           playerIt->second.playbackStatus = "Playing";
           m_recentNoSignalPauseAt.erase(pauseIt);
         }
@@ -1602,8 +1602,8 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
   const std::weak_ptr<void> aliveGuard = m_aliveGuard;
   try {
     proxyIt->second->callMethodAsync("GetAll")
-        .onInterface(k_properties_interface)
-        .withArguments(std::string{k_mpris_root_interface})
+        .onInterface(kPropertiesInterface)
+        .withArguments(std::string{kMprisRootInterface})
         .uponReplyInvoke([this, aliveGuard, busName, hadPositionSignal](
                              std::optional<sdbus::Error> rootErr, std::map<std::string, sdbus::Variant> rootProps) {
           if (aliveGuard.expired()) {
@@ -1617,8 +1617,8 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
 
           try {
             proxyLookup->second->callMethodAsync("GetAll")
-                .onInterface(k_properties_interface)
-                .withArguments(std::string{k_mpris_player_interface})
+                .onInterface(kPropertiesInterface)
+                .withArguments(std::string{kMprisPlayerInterface})
                 .uponReplyInvoke([this, aliveGuard, busName, hadPositionSignal, rootErr,
                                   rootProps = std::move(rootProps)](std::optional<sdbus::Error> playerErr,
                                                                     std::map<std::string, sdbus::Variant> playerProps) {
@@ -1635,7 +1635,7 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
                     int& failureCount = m_playerPropertiesFailures[busName];
                     ++failureCount;
 
-                    if (failureCount == k_player_properties_failure_threshold) {
+                    if (failureCount == kPlayerPropertiesFailureThreshold) {
                       kLog.warn("player properties refresh disabled after {} failures name={}", failureCount, busName);
                       // Cancel the timer to stop polling this player
                       if (auto it = m_positionResyncTimers.find(busName); it != m_positionResyncTimers.end()) {
@@ -1643,16 +1643,16 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
                         m_positionResyncTimers.erase(it);
                       }
                       return;
-                    } else if (failureCount > k_player_properties_failure_threshold) {
+                    } else if (failureCount > kPlayerPropertiesFailureThreshold) {
                       return;
                     } else if (failureCount > 1) {
                       // Keep the first failure on the normal retry cadence before backing off.
                       // Apply exponential backoff
                       auto& backoff = m_playerPropertiesRefreshBackoffMs[busName];
                       if (backoff.count() == 0) {
-                        backoff = k_position_retry_initial_backoff;
+                        backoff = kPositionRetryInitialBackoff;
                       } else {
-                        backoff = std::min(backoff * 2, k_position_retry_max_backoff);
+                        backoff = std::min(backoff * 2, kPositionRetryMaxBackoff);
                       }
                       kLog.debug("player properties refresh backoff failures={} interval={}ms name={}", failureCount,
                                  backoff.count(), busName);
@@ -1741,7 +1741,7 @@ void MprisService::applyPlayerSnapshot(const std::string& busName, const MprisPl
         refreshPlayerPosition(busName, true);
       });
       if (shouldRetryPropertiesRefresh(busName)) {
-        schedulePositionRefreshRetry(busName, k_position_retry_interval, true);
+        schedulePositionRefreshRetry(busName, kPositionRetryInterval, true);
       }
     }
     return;
@@ -1766,10 +1766,10 @@ void MprisService::applyPlayerSnapshot(const std::string& busName, const MprisPl
     const bool incomingWeak = !hasStrongNowPlayingMetadata(info);
     const auto strongIt = m_lastStrongMetadataUpdate.find(busName);
     const bool withinStabilizeWindow =
-        strongIt != m_lastStrongMetadataUpdate.end() && now - strongIt->second < k_metadata_stabilize_window;
+        strongIt != m_lastStrongMetadataUpdate.end() && now - strongIt->second < kMetadataStabilizeWindow;
     const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
     const bool recentLocalSeek =
-        seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= k_seek_pause_grace_window;
+        seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
 
     if (merged.playbackStatus == "Playing" && previousStrong && incomingWeak && withinStabilizeWindow &&
         recentLocalSeek) {
@@ -1828,7 +1828,7 @@ void MprisService::applyPlayerSnapshot(const std::string& busName, const MprisPl
         preservePreviousPosition = rawDeltaUs > maxReasonableDeltaUs;
         if (!preservePreviousPosition && previous_info.playbackStatus == "Paused" &&
             merged.playbackStatus == "Paused") {
-          preservePreviousPosition = !recentLocalSeek && rawDeltaUs < k_paused_same_track_position_jump_tolerance_us;
+          preservePreviousPosition = !recentLocalSeek && rawDeltaUs < kPausedSameTrackPositionJumpToleranceUs;
         }
       }
 
@@ -1851,7 +1851,7 @@ void MprisService::applyPlayerSnapshot(const std::string& busName, const MprisPl
       offsetIt->second = 0;
       const bool looksLikePreviousTrackContinuation =
           merged.positionUs > 5'000'000 && previousNormalized > 5'000'000 &&
-          std::llabs(merged.positionUs - previousRawPositionUs) <= k_previous_track_continuation_slack_us;
+          std::llabs(merged.positionUs - previousRawPositionUs) <= kPreviousTrackContinuationSlackUs;
       if (looksLikePreviousTrackContinuation) {
         offsetIt->second = merged.positionUs;
       }
@@ -1899,7 +1899,7 @@ void MprisService::applyPlayerSnapshot(const std::string& busName, const MprisPl
         refreshPlayerPosition(busName, true);
       });
       if (shouldRetryPropertiesRefresh(busName)) {
-        schedulePositionRefreshRetry(busName, k_position_retry_interval, true);
+        schedulePositionRefreshRetry(busName, kPositionRetryInterval, true);
       }
     }
 
@@ -2056,7 +2056,7 @@ bool MprisService::callPlayerMethod(const std::string& busName, const char* meth
 
   try {
     it->second->callMethodAsync(method.c_str())
-        .onInterface(k_mpris_player_interface)
+        .onInterface(kMprisPlayerInterface)
         .uponReplyInvoke(makeAsyncReplyHandler("control", busName, method));
     return true;
   } catch (const sdbus::Error& e) {

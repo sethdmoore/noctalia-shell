@@ -6,6 +6,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 class Node;
@@ -27,7 +29,8 @@ namespace settings {
   class WidgetAddPopup final : public DialogPopupHost {
   public:
     using SelectCallback = std::function<void(const std::vector<std::string>& lanePath, const std::string& value,
-                                              const std::string& newInstanceType, const std::string& newInstanceId)>;
+                                              const std::string& newInstanceType, const std::string& newInstanceId,
+                                              const std::vector<std::pair<std::string, std::string>>& initialSettings)>;
 
     WidgetAddPopup() = default;
     ~WidgetAddPopup();
@@ -59,6 +62,7 @@ namespace settings {
   private:
     std::vector<SearchPickerOption> m_normalOptions;
     std::vector<SearchPickerOption> m_instanceOptions;
+    std::unordered_map<std::string, std::string> m_presetScripts; // picker value -> asset script path
     float m_scale = 1.0f;
     const Config* m_config = nullptr;
     std::vector<std::string> m_lanePath;
@@ -66,7 +70,7 @@ namespace settings {
     Flex* m_headerRow = nullptr;
     Flex* m_createActions = nullptr;
     SearchPicker* m_searchPicker = nullptr;
-    Label* m_createTitle = nullptr;
+    Label* m_instanceDescription = nullptr;
     Input* m_instanceInput = nullptr;
     bool m_instanceModeEnabled = false;
     bool m_createFormVisible = false;
@@ -78,6 +82,7 @@ namespace settings {
     void beginCreateFlow(const SearchPickerOption& option);
     void finishCreateFlow();
     void reopenForCurrentMode();
+    [[nodiscard]] std::string instanceFormTitle() const;
     [[nodiscard]] std::pair<float, float> popupSize() const;
     [[nodiscard]] std::string suggestedInstanceId(std::string_view type) const;
     [[nodiscard]] bool canCreateInstanceId(std::string_view id) const;

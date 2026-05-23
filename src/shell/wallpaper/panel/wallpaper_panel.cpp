@@ -162,7 +162,7 @@ void WallpaperPanel::create() {
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("wallpaper.panel.title"));
   title->setFontSize(Style::fontSizeTitle * scale);
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setColor(colorSpecFromRole(ColorRole::Primary));
   m_title = title.get();
   headerLeft->addChild(std::move(title));

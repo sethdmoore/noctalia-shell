@@ -170,7 +170,7 @@ GlyphPicker::GlyphPicker(float chromeScale) : m_chromeScale(std::max(0.1f, chrom
 
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("ui.dialogs.glyph-picker.title"));
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeTitle * m_chromeScale);
   title->setColor(colorSpecFromRole(ColorRole::Primary));
   m_title = static_cast<Label*>(header->addChild(std::move(title)));

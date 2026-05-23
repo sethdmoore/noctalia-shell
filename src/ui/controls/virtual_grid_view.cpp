@@ -182,6 +182,19 @@ void VirtualGridView::setOnSelectionChanged(std::function<void(std::optional<std
   m_onSelectionChanged = std::move(callback);
 }
 
+std::size_t VirtualGridView::pageItemStride() const noexcept {
+  if (m_scroll == nullptr || m_layoutColumns == 0 || m_cellHeightResolved <= 0.0f) {
+    return 1;
+  }
+  const float viewportH = m_scroll->contentViewportHeight();
+  const float rowStride = m_cellHeightResolved + m_rowGap;
+  if (rowStride <= 0.0f) {
+    return m_layoutColumns;
+  }
+  const auto visibleRows = std::max<std::size_t>(1, static_cast<std::size_t>(std::floor(viewportH / rowStride)));
+  return std::max<std::size_t>(1, visibleRows * m_layoutColumns);
+}
+
 void VirtualGridView::doLayout(Renderer& renderer) {
   if (m_adapter == nullptr || m_scroll == nullptr || m_canvas == nullptr || m_inputArea == nullptr) {
     Flex::doLayout(renderer);

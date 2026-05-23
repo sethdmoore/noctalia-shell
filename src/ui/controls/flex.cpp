@@ -78,6 +78,7 @@ struct Flex::ChildLayout {
   LayoutSize measured{};
   float main = 0.0f;
   float cross = 0.0f;
+  bool gapExcluded = false;
 };
 
 namespace {
@@ -257,9 +258,13 @@ void Flex::setSoftness(float softness) {
   m_background->setStyle(style);
 }
 
-void Flex::setCardStyle(float scale, float fillOpacity) {
+void Flex::setCardStyle(float scale, float fillOpacity, bool showBorder) {
   setFill(colorSpecFromRole(ColorRole::SurfaceVariant, fillOpacity));
-  setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+  if (showBorder) {
+    setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+  } else {
+    clearBorder();
+  }
   setRadius(Style::scaledRadiusXl(scale));
   setPadding(Style::cardPadding * scale);
 }
@@ -321,6 +326,15 @@ void Flex::setRowLayout() {
   setGap(Style::spaceXs);
   setAlign(FlexAlign::Center);
   setJustify(FlexJustify::Start);
+}
+
+void Flex::setChildGapExcluded(Node* child, bool excluded) {
+  if (excluded) {
+    m_gapExcludedChildren.insert(child);
+  } else {
+    m_gapExcludedChildren.erase(child);
+  }
+  markLayoutDirty();
 }
 
 void Flex::ensureBackground() {
@@ -427,6 +441,7 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     }
     auto& item = items.emplace_back();
     item.node = child.get();
+    item.gapExcluded = m_gapExcludedChildren.count(child.get()) > 0;
     if (child->flexGrow() > 0.0f) {
       totalGrow += child->flexGrow();
     }
@@ -458,7 +473,17 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     measureItem(item, false, 0.0f);
   }
 
-  const float totalGap = items.size() > 1 ? m_gap * static_cast<float>(items.size() - 1) : 0.0f;
+  int numGaps = 0;
+  {
+    bool prevExcluded = items.empty() || items[0].gapExcluded;
+    for (size_t i = 1; i < items.size(); ++i) {
+      if (!prevExcluded && !items[i].gapExcluded) {
+        numGaps++;
+      }
+      prevExcluded = items[i].gapExcluded;
+    }
+  }
+  const float totalGap = m_gap * static_cast<float>(numGaps);
 
   if (mainKnown && totalGrow > 0.0f) {
     float fixedMain = mainPaddingStart(*this, horizontal) + mainPaddingEnd(*this, horizontal) + totalGap;
@@ -511,11 +536,10 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     }
 
     float effectiveGap = m_gap;
-    if (m_justify == FlexJustify::SpaceBetween && items.size() > 1) {
-      effectiveGap = std::max(m_gap, (innerMain - arrangedChildrenMain) / static_cast<float>(items.size() - 1));
+    if (m_justify == FlexJustify::SpaceBetween && items.size() > 1 && numGaps > 0) {
+      effectiveGap = std::max(m_gap, (innerMain - arrangedChildrenMain) / static_cast<float>(numGaps));
     }
-    const float arrangedContentMain =
-        arrangedChildrenMain + (items.size() > 1 ? effectiveGap * static_cast<float>(items.size() - 1) : 0.0f);
+    const float arrangedContentMain = arrangedChildrenMain + effectiveGap * static_cast<float>(numGaps);
 
     float cursor = mainPaddingStart(*this, horizontal);
     if (m_justify == FlexJustify::Center) {
@@ -525,9 +549,13 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     }
 
     bool first = true;
+    bool prevExcluded = items.empty() || items.front().gapExcluded;
     for (auto& item : items) {
       if (!first) {
-        cursor += effectiveGap;
+        if (!prevExcluded && !item.gapExcluded) {
+          cursor += effectiveGap;
+        }
+        prevExcluded = item.gapExcluded;
       }
       first = false;
 

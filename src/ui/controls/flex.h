@@ -4,6 +4,7 @@
 #include "ui/palette.h"
 
 #include <optional>
+#include <unordered_set>
 
 class Renderer;
 class RectNode;
@@ -58,7 +59,7 @@ public:
   void setSoftness(float softness);
 
   // Default app card chrome: filled surface variant with a soft outline.
-  void setCardStyle(float scale = 1.0f, float fillOpacity = 1.0f);
+  void setCardStyle(float scale = 1.0f, float fillOpacity = 1.0f, bool showBorder = true);
 
   void setMinWidth(float minWidth);
   void setMinHeight(float minHeight);
@@ -70,6 +71,7 @@ public:
   void setFillHeight(bool fill);
 
   void setRowLayout();
+  void setChildGapExcluded(Node* child, bool excluded);
 
   [[nodiscard]] FlexDirection direction() const noexcept { return m_direction; }
   [[nodiscard]] float gap() const noexcept { return m_gap; }
@@ -124,4 +126,5 @@ private:
   bool m_sizingFromLayout = false;
   bool m_explicitWidth = false;
   bool m_explicitHeight = false;
+  std::unordered_set<const Node*> m_gapExcludedChildren;
 };

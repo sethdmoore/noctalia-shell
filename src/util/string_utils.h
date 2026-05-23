@@ -199,6 +199,27 @@ namespace StringUtils {
     return std::string(text);
   }
 
+  [[nodiscard]] inline std::string truncateUtf8CodePoints(std::string_view text, std::size_t maxCodePoints) {
+    std::size_t codePoints = 0;
+    std::size_t bytePos = 0;
+    while (bytePos < text.size() && codePoints < maxCodePoints) {
+      auto lead = static_cast<unsigned char>(text[bytePos]);
+      if (lead < 0x80)
+        bytePos += 1;
+      else if ((lead & 0xE0) == 0xC0)
+        bytePos += 2;
+      else if ((lead & 0xF0) == 0xE0)
+        bytePos += 3;
+      else
+        bytePos += 4;
+      ++codePoints;
+    }
+    if (bytePos >= text.size()) {
+      return std::string(text);
+    }
+    return std::string(text.substr(0, bytePos));
+  }
+
   [[nodiscard]] inline std::string truncateUtf8(std::string_view text, std::size_t maxBytes) {
     if (text.size() <= maxBytes) {
       return std::string(text);

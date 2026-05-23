@@ -17,7 +17,7 @@ class BatteryWidget : public Widget {
 public:
   BatteryWidget(UPowerService* upower, std::string deviceSelector = "auto", int warningThreshold = 0,
                 ColorSpec warningColor = {}, BatteryDisplayMode displayMode = BatteryDisplayMode::Icon,
-                bool showLabel = true);
+                bool showLabel = true, bool hideWhenPlugged = false, bool hideWhenFull = false);
 
   void create() override;
 
@@ -40,6 +40,8 @@ private:
   ColorSpec m_warningColor;
   BatteryDisplayMode m_displayMode = BatteryDisplayMode::Icon;
   bool m_showLabel = true;
+  bool m_hideWhenPlugged = false;
+  bool m_hideWhenFull = false;
 
   // Icon mode nodes
   Glyph* m_glyph = nullptr;

@@ -71,9 +71,7 @@ namespace {
   }
 
   bool looksLikeRuntimeLauncher(std::string_view value) {
-    std::string normalized(value);
-    std::ranges::transform(normalized, normalized.begin(),
-                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    const std::string normalized = StringUtils::toLower(value);
     if (normalized.empty()) {
       return false;
     }
@@ -90,9 +88,7 @@ namespace {
   }
 
   bool isLikelyFallbackStreamLabel(std::string_view value) {
-    std::string normalized(value);
-    std::ranges::transform(normalized, normalized.begin(),
-                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    std::string normalized = StringUtils::toLower(value);
     for (char& ch : normalized) {
       if (std::isspace(static_cast<unsigned char>(ch)) != 0 || ch == '_') {
         ch = '-';
@@ -114,8 +110,7 @@ namespace {
       if (lastSlash != std::string::npos) {
         value = value.substr(lastSlash + 1);
       }
-      std::ranges::transform(value, value.begin(),
-                             [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+      StringUtils::toLowerInPlace(value);
       return value;
     };
 
@@ -225,7 +220,7 @@ namespace {
     if (lastSlash != std::string::npos) {
       value = value.substr(lastSlash + 1);
     }
-    std::ranges::transform(value, value.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    StringUtils::toLowerInPlace(value);
     return value;
   }
 
@@ -282,10 +277,7 @@ namespace {
       }
     }
 
-    std::string tok(s);
-    std::ranges::transform(tok, tok.begin(), [](unsigned char ch) {
-      return static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-    });
+    std::string tok = StringUtils::toLower(s);
 
     bool allDigit = true;
     for (char c : tok) {
@@ -730,7 +722,7 @@ namespace {
       m_radio = static_cast<RadioButton*>(addChild(std::move(radio)));
 
       auto title = std::make_unique<Label>();
-      title->setBold(true);
+      title->setFontWeight(FontWeight::Bold);
       title->setFontSize(Style::fontSizeBody * scale);
       title->setColor(colorSpecFromRole(ColorRole::OnSurface));
       title->setFlexGrow(1.0f);
@@ -862,7 +854,7 @@ namespace {
       textCol->setFlexGrow(1.0f);
 
       auto appName = std::make_unique<Label>();
-      appName->setBold(true);
+      appName->setFontWeight(FontWeight::Bold);
       appName->setFontSize(Style::fontSizeBody * scale);
       appName->setColor(colorSpecFromRole(ColorRole::OnSurface));
       m_appNameLabel = appName.get();
@@ -918,7 +910,7 @@ namespace {
 
       auto value = std::make_unique<Label>();
       value->setText("0%");
-      value->setBold(true);
+      value->setFontWeight(FontWeight::Bold);
       value->setFontSize(Style::fontSizeBody * scale);
       value->setMinWidth(kValueLabelWidth * scale);
       m_valueLabel = value.get();
@@ -1080,11 +1072,10 @@ namespace {
           }
         }
 
+        StringUtils::toLowerInPlace(s);
         for (char& c : s) {
           if (c == ' ' || c == '_') {
             c = '-';
-          } else {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
           }
         }
         return s;
@@ -1194,7 +1185,7 @@ namespace {
 
     auto titleLabel = std::make_unique<Label>();
     titleLabel->setText(title);
-    titleLabel->setBold(true);
+    titleLabel->setFontWeight(FontWeight::Bold);
     titleLabel->setFontSize(Style::fontSizeBody * scale);
     titleLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
     card->addChild(std::move(titleLabel));
@@ -1335,7 +1326,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   m_volumeColumn = volumeRow.get();
 
   auto outputVolumeCard = std::make_unique<Flex>();
-  applySectionCardStyle(*outputVolumeCard, scale, panelCardOpacity());
+  applySectionCardStyle(*outputVolumeCard, scale, panelCardOpacity(), panelBordersEnabled());
   outputVolumeCard->setFlexGrow(1.0f);
   m_outputVolumeCard = outputVolumeCard.get();
 
@@ -1410,7 +1401,7 @@ std::unique_ptr<Flex> AudioTab::create() {
 
   auto outputValue = std::make_unique<Label>();
   outputValue->setText("0%");
-  outputValue->setBold(true);
+  outputValue->setFontWeight(FontWeight::Bold);
   outputValue->setFontSize(Style::fontSizeBody * scale);
   outputValue->setMinWidth(kValueLabelWidth * scale);
   m_outputValue = outputValue.get();
@@ -1439,7 +1430,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   volumeRow->addChild(std::move(outputVolumeCard));
 
   auto inputVolumeCard = std::make_unique<Flex>();
-  applySectionCardStyle(*inputVolumeCard, scale, panelCardOpacity());
+  applySectionCardStyle(*inputVolumeCard, scale, panelCardOpacity(), panelBordersEnabled());
   inputVolumeCard->setFlexGrow(1.0f);
   m_inputVolumeCard = inputVolumeCard.get();
 
@@ -1514,7 +1505,7 @@ std::unique_ptr<Flex> AudioTab::create() {
 
   auto inputValue = std::make_unique<Label>();
   inputValue->setText("0%");
-  inputValue->setBold(true);
+  inputValue->setFontWeight(FontWeight::Bold);
   inputValue->setFontSize(Style::fontSizeBody * scale);
   inputValue->setMinWidth(kValueLabelWidth * scale);
   m_inputValue = inputValue.get();
@@ -1545,7 +1536,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   tab->addChild(std::move(volumeRow));
 
   auto programCard = std::make_unique<Flex>();
-  applySectionCardStyle(*programCard, scale, panelCardOpacity());
+  applySectionCardStyle(*programCard, scale, panelCardOpacity(), panelBordersEnabled());
   programCard->setFlexGrow(1.0f);
   m_programCard = programCard.get();
 
@@ -2000,7 +1991,8 @@ void AudioTab::syncValueLabelWidths(Renderer& renderer) {
   const float sliderMax = sliderMaxPercent();
   if (m_syncedPercentLabelMinWidth < 0.0f || std::abs(sliderMax - m_lastSyncedPercentLabelSliderMax) >= 0.0001f) {
     const std::string sampleLabel = widestPercentLabel(sliderMax);
-    const TextMetrics metrics = renderer.measureText(sampleLabel, Style::fontSizeBody * contentScale(), true);
+    const TextMetrics metrics =
+        renderer.measureText(sampleLabel, Style::fontSizeBody * contentScale(), FontWeight::Bold);
     m_syncedPercentLabelMinWidth = std::round(metrics.width);
     m_lastSyncedPercentLabelSliderMax = sliderMax;
   }

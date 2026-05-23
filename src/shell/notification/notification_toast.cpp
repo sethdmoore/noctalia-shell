@@ -33,6 +33,7 @@
 #include <filesystem>
 #include <linux/input-event-codes.h>
 #include <unistd.h>
+#include <vector>
 
 namespace {
 
@@ -232,25 +233,18 @@ namespace {
 
   float notificationTextMaxWidth() { return std::max(0.0f, kCardWidth - notificationTextStartX() - kCardInnerPad); }
 
-  bool isCloseButtonHit(float localX, float localY) {
-    const float closeLeft = static_cast<float>(kCardWidth) - kCardInnerPad - kCloseButtonSize;
-    const float closeTop = kCardInnerPad;
-    return localX >= closeLeft && localX < closeLeft + kCloseButtonSize && localY >= closeTop &&
-           localY < closeTop + kCloseButtonSize;
+  std::unique_ptr<Button> makeNotificationActionButton(std::string_view label) {
+    auto actionButton = std::make_unique<Button>();
+    actionButton->setVariant(ButtonVariant::Outline);
+    actionButton->setFontSize(Style::fontSizeCaption);
+    actionButton->setText(label);
+    return actionButton;
   }
 
-  float measureActionsFromPairs(RenderContext& rc, const std::vector<std::string>& actions) {
-    if (actions.empty()) {
-      return 0.0f;
-    }
-
-    auto actionsRow = std::make_unique<Flex>();
-    actionsRow->setDirection(FlexDirection::Horizontal);
-    actionsRow->setAlign(FlexAlign::Center);
-    actionsRow->setGap(kActionGap);
-
-    int actionCount = 0;
-    for (std::size_t i = 0; i + 1 < actions.size() && actionCount < kMaxActionButtons; i += 2) {
+  std::vector<std::unique_ptr<Button>> collectNotificationActionButtons(const std::vector<std::string>& actions) {
+    std::vector<std::unique_ptr<Button>> buttons;
+    buttons.reserve(kMaxActionButtons);
+    for (std::size_t i = 0; i + 1 < actions.size() && static_cast<int>(buttons.size()) < kMaxActionButtons; i += 2) {
       const std::string& actionKey = actions[i];
       std::string actionLabel = actions[i + 1];
       if (actionKey.empty() || actionKey == "default") {
@@ -259,21 +253,74 @@ namespace {
       if (StringUtils::isBlank(actionLabel)) {
         actionLabel = fallbackActionLabel();
       }
-
-      auto actionButton = std::make_unique<Button>();
-      actionButton->setVariant(ButtonVariant::Outline);
-      actionButton->setFontSize(Style::fontSizeCaption);
-      actionButton->setText(actionLabel);
-      actionsRow->addChild(std::move(actionButton));
-      ++actionCount;
+      buttons.push_back(makeNotificationActionButton(actionLabel));
     }
+    return buttons;
+  }
 
-    if (actionCount == 0) {
+  bool notificationActionsPreferStack(RenderContext& rc, const std::vector<std::unique_ptr<Button>>& buttons) {
+    if (buttons.size() < 2) {
+      return false;
+    }
+    const float rowWidth = notificationTextMaxWidth();
+    float totalWidth = 0.0f;
+    for (std::size_t i = 0; i < buttons.size(); ++i) {
+      if (i > 0) {
+        totalWidth += kActionGap;
+      }
+      const LayoutSize measured = buttons[i]->measure(rc, LayoutConstraints{});
+      totalWidth += measured.width;
+    }
+    return totalWidth > rowWidth + 0.5f;
+  }
+
+  void configureNotificationActionsRow(Flex& row, bool stacked) {
+    if (stacked) {
+      row.setDirection(FlexDirection::Vertical);
+      row.setAlign(FlexAlign::Start);
+      row.setJustify(FlexJustify::End);
+    } else {
+      row.setDirection(FlexDirection::Horizontal);
+      row.setAlign(FlexAlign::Center);
+      row.setJustify(FlexJustify::Start);
+    }
+    row.setGap(kActionGap);
+  }
+
+  float layoutNotificationActionsRow(RenderContext& rc, Flex& row, std::vector<std::unique_ptr<Button>>& buttons) {
+    const bool stacked = notificationActionsPreferStack(rc, buttons);
+    configureNotificationActionsRow(row, stacked);
+    const float rowWidth = notificationTextMaxWidth();
+    for (auto& button : buttons) {
+      if (stacked) {
+        button->setMaxWidth(0.0f);
+      } else if (buttons.size() == 1) {
+        button->setMaxWidth(rowWidth);
+      } else {
+        button->setMaxWidth(0.0f);
+      }
+      row.addChild(std::move(button));
+    }
+    buttons.clear();
+    row.setSize(rowWidth, 0.0f);
+    row.layout(rc);
+    return row.height() + kActionRowGap;
+  }
+
+  bool isCloseButtonHit(float localX, float localY) {
+    const float closeLeft = static_cast<float>(kCardWidth) - kCardInnerPad - kCloseButtonSize;
+    const float closeTop = kCardInnerPad;
+    return localX >= closeLeft && localX < closeLeft + kCloseButtonSize && localY >= closeTop &&
+           localY < closeTop + kCloseButtonSize;
+  }
+
+  float measureActionsFromPairs(RenderContext& rc, const std::vector<std::string>& actions) {
+    auto buttons = collectNotificationActionButtons(actions);
+    if (buttons.empty()) {
       return 0.0f;
     }
-
-    actionsRow->layout(rc);
-    return actionsRow->height() + kActionRowGap;
+    auto actionsRow = std::make_unique<Flex>();
+    return layoutNotificationActionsRow(rc, *actionsRow, buttons);
   }
 
   struct ToastGeometry {
@@ -303,7 +350,7 @@ namespace {
     if (StringUtils::isBlank(displayBody)) {
       Label summaryProbe;
       summaryProbe.setFontSize(kSummaryFontSize);
-      summaryProbe.setBold(true);
+      summaryProbe.setFontWeight(FontWeight::Bold);
       summaryProbe.setMaxWidth(textMaxWidth);
       summaryProbe.setText(displaySummary);
       summaryProbe.setMaxLines(kMaxSummaryLines);
@@ -329,7 +376,7 @@ namespace {
     for (const auto& [sl, bl] : kPreference) {
       Label summaryProbe;
       summaryProbe.setFontSize(kSummaryFontSize);
-      summaryProbe.setBold(true);
+      summaryProbe.setFontWeight(FontWeight::Bold);
       summaryProbe.setMaxWidth(textMaxWidth);
       summaryProbe.setText(displaySummary);
       summaryProbe.setMaxLines(sl);
@@ -357,7 +404,7 @@ namespace {
 
     Label summaryProbe;
     summaryProbe.setFontSize(kSummaryFontSize);
-    summaryProbe.setBold(true);
+    summaryProbe.setFontWeight(FontWeight::Bold);
     summaryProbe.setMaxWidth(textMaxWidth);
     summaryProbe.setText(displaySummary);
     summaryProbe.setMaxLines(1);
@@ -1898,7 +1945,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   summary->setText(displaySummary);
   summary->setFontSize(kSummaryFontSize);
   summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  summary->setBold(true);
+  summary->setFontWeight(FontWeight::Bold);
   summary->setMaxWidth(textMaxWidth);
   std::unique_ptr<Flex> actionsRow;
   std::unique_ptr<Flex> inlineReplyRow;
@@ -1911,76 +1958,68 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
     const int totalDuration = entry.displayDurationMs;
 
     // Build action buttons row (always visible initially)
-    actionsRow = std::make_unique<Flex>();
-    actionsRow->setDirection(FlexDirection::Horizontal);
-    actionsRow->setAlign(FlexAlign::Center);
-    actionsRow->setGap(kActionGap);
+    {
+      std::vector<std::unique_ptr<Button>> buttons;
+      for (std::size_t i = 0; i + 1 < entry.actions.size() && static_cast<int>(buttons.size()) < kMaxActionButtons;
+           i += 2) {
+        const std::string actionKey = entry.actions[i];
+        std::string actionLabel = entry.actions[i + 1];
+        if (actionKey.empty() || actionKey == "default") {
+          continue;
+        }
+        if (StringUtils::isBlank(actionLabel)) {
+          actionLabel = fallbackActionLabel();
+        }
 
-    int actionCount = 0;
-    for (std::size_t i = 0; i + 1 < entry.actions.size() && actionCount < kMaxActionButtons; i += 2) {
-      const std::string actionKey = entry.actions[i];
-      std::string actionLabel = entry.actions[i + 1];
-      if (actionKey.empty() || actionKey == "default") {
-        continue;
-      }
-      if (StringUtils::isBlank(actionLabel)) {
-        actionLabel = fallbackActionLabel();
-      }
-
-      auto actionButton = std::make_unique<Button>();
-      actionButton->setVariant(ButtonVariant::Outline);
-      actionButton->setFontSize(Style::fontSizeCaption);
-      actionButton->setText(actionLabel);
-      actionButton->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
-      actionButton->setOnEnter([this, notificationId]() {
-        pauseCountdowns(notificationId);
-        if (m_notifications != nullptr) {
-          m_notifications->pauseExpiry(notificationId);
-        }
-      });
-      actionButton->setOnLeave([this, notificationId, totalDuration]() {
-        if (totalDuration < 0) {
-          return;
-        }
-        const auto* popup = findEntry(notificationId);
-        if (popup == nullptr || popup->replyInputFocused) {
-          return;
-        }
-        const float remaining = std::clamp(popup->remainingProgress, 0.0f, 1.0f);
-        if (remaining <= 0.0f) {
+        auto actionButton = makeNotificationActionButton(actionLabel);
+        actionButton->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+        actionButton->setOnEnter([this, notificationId]() {
+          pauseCountdowns(notificationId);
           if (m_notifications != nullptr) {
-            m_notifications->resumeExpiry(notificationId, 0);
+            m_notifications->pauseExpiry(notificationId);
           }
-          return;
-        }
-        const int32_t remainingMs =
-            std::max<int32_t>(1, static_cast<int32_t>(std::ceil(static_cast<float>(totalDuration) * remaining)));
-        if (m_notifications != nullptr) {
-          m_notifications->resumeExpiry(notificationId, remainingMs);
-        }
-        resumeCountdowns(notificationId);
-      });
-      actionButton->setOnClick([this, id = entry.notificationId, actionKey]() {
-        if (actionKey == "inline-reply") {
-          enterInlineReplyMode(id);
-          return;
-        }
-        if (m_notifications == nullptr) {
-          return;
-        }
-        if (!m_notifications->invokeAction(id, actionKey, true)) {
-          kLog.warn("notification toast: failed to invoke action '{}' for #{}", actionKey, id);
-        }
-      });
-      actionsRow->addChild(std::move(actionButton));
-      ++actionCount;
-    }
+        });
+        actionButton->setOnLeave([this, notificationId, totalDuration]() {
+          if (totalDuration < 0) {
+            return;
+          }
+          const auto* popup = findEntry(notificationId);
+          if (popup == nullptr || popup->replyInputFocused) {
+            return;
+          }
+          const float remaining = std::clamp(popup->remainingProgress, 0.0f, 1.0f);
+          if (remaining <= 0.0f) {
+            if (m_notifications != nullptr) {
+              m_notifications->resumeExpiry(notificationId, 0);
+            }
+            return;
+          }
+          const int32_t remainingMs =
+              std::max<int32_t>(1, static_cast<int32_t>(std::ceil(static_cast<float>(totalDuration) * remaining)));
+          if (m_notifications != nullptr) {
+            m_notifications->resumeExpiry(notificationId, remainingMs);
+          }
+          resumeCountdowns(notificationId);
+        });
+        actionButton->setOnClick([this, id = entry.notificationId, actionKey]() {
+          if (actionKey == "inline-reply") {
+            enterInlineReplyMode(id);
+            return;
+          }
+          if (m_notifications == nullptr) {
+            return;
+          }
+          if (!m_notifications->invokeAction(id, actionKey, true)) {
+            kLog.warn("notification toast: failed to invoke action '{}' for #{}", actionKey, id);
+          }
+        });
+        buttons.push_back(std::move(actionButton));
+      }
 
-    if (actionCount > 0) {
-      actionsRow->layout(*m_renderContext);
-      actionsReservedHeight = actionsRow->height() + kActionRowGap;
-    } else {
-      actionsRow.reset();
+      if (!buttons.empty()) {
+        actionsRow = std::make_unique<Flex>();
+        actionsReservedHeight = layoutNotificationActionsRow(*m_renderContext, *actionsRow, buttons);
+      }
     }
 
     // Inline reply row (hidden until the user taps Reply).

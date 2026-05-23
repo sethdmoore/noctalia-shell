@@ -14,17 +14,17 @@ namespace {
   constexpr Logger kLog("notification");
 } // namespace
 
-static const sdbus::ServiceName k_bus_name{"org.freedesktop.Notifications"};
-static const sdbus::ObjectPath k_object_path{"/org/freedesktop/Notifications"};
-static constexpr auto k_interface = "org.freedesktop.Notifications";
-static constexpr auto k_already_owner_error = "System.Error.EALREADY";
+static const sdbus::ServiceName kBusName{"org.freedesktop.Notifications"};
+static const sdbus::ObjectPath kObjectPath{"/org/freedesktop/Notifications"};
+static constexpr auto kInterface = "org.freedesktop.Notifications";
+static constexpr auto kAlreadyOwnerError = "System.Error.EALREADY";
 
 namespace {
   void requestNotificationBusName(sdbus::IConnection& connection) {
     try {
-      connection.requestName(k_bus_name);
+      connection.requestName(kBusName);
     } catch (const sdbus::Error& e) {
-      if (e.getName() == k_already_owner_error) {
+      if (e.getName() == kAlreadyOwnerError) {
         kLog.debug("notification daemon bus name already owned by this connection; reusing");
         return;
       }
@@ -36,7 +36,7 @@ namespace {
 NotificationService::NotificationService(SessionBus& bus, NotificationManager& manager)
     : m_bus(bus), m_manager(manager) {
   try {
-    m_object = sdbus::createObject(m_bus.connection(), k_object_path);
+    m_object = sdbus::createObject(m_bus.connection(), kObjectPath);
 
     m_object
         ->addVTable(
@@ -74,7 +74,7 @@ NotificationService::NotificationService(SessionBus& bus, NotificationManager& m
             sdbus::registerSignal("NotificationClosed").withParameters<uint32_t, uint32_t>("id", "reason"),
 
             sdbus::registerSignal("ActionInvoked").withParameters<uint32_t, std::string>("id", "action_key"))
-        .forInterface(k_interface);
+        .forInterface(kInterface);
 
     requestNotificationBusName(m_bus.connection());
     m_nameAcquired = true;
@@ -86,7 +86,7 @@ NotificationService::NotificationService(SessionBus& bus, NotificationManager& m
     m_manager.setActionInvokeCallback(nullptr);
     if (m_nameAcquired) {
       try {
-        m_bus.connection().releaseName(k_bus_name);
+        m_bus.connection().releaseName(kBusName);
       } catch (const sdbus::Error& e) {
         kLog.debug("notification daemon release after init failure failed: {}", e.what());
       }
@@ -102,7 +102,7 @@ NotificationService::~NotificationService() {
 
   if (m_nameAcquired) {
     try {
-      m_bus.connection().releaseName(k_bus_name);
+      m_bus.connection().releaseName(kBusName);
     } catch (const sdbus::Error& e) {
       kLog.debug("notification daemon bus name release failed: {}", e.what());
     }
@@ -125,7 +125,7 @@ void NotificationService::processExpired() {
   }
 }
 
-static constexpr size_t k_max_string_len = 1024;
+static constexpr size_t kMaxStringLen = 1024;
 namespace {
 
   std::vector<std::string> sanitizeActions(const std::vector<std::string>& actions) {
@@ -133,8 +133,8 @@ namespace {
     sanitized.reserve(actions.size() - (actions.size() % 2));
 
     for (size_t i = 0; i + 1 < actions.size(); i += 2) {
-      std::string actionKey = StringUtils::truncateUtf8(actions[i], k_max_string_len);
-      std::string label = StringUtils::truncateUtf8(actions[i + 1], k_max_string_len);
+      std::string actionKey = StringUtils::truncateUtf8(actions[i], kMaxStringLen);
+      std::string label = StringUtils::truncateUtf8(actions[i + 1], kMaxStringLen);
 
       if (actionKey.empty()) {
         continue;
@@ -231,17 +231,17 @@ uint32_t NotificationService::onNotify(const std::string& app_name, uint32_t rep
 
   std::optional<std::string> icon;
   if (!app_icon.empty()) {
-    icon = StringUtils::truncateUtf8(app_icon, k_max_string_len);
+    icon = StringUtils::truncateUtf8(app_icon, kMaxStringLen);
   }
   if (auto it = hints.find("image-path"); it != hints.end()) {
     try {
-      icon = StringUtils::truncateUtf8(it->second.get<std::string>(), k_max_string_len);
+      icon = StringUtils::truncateUtf8(it->second.get<std::string>(), kMaxStringLen);
     } catch (...) {
     }
   }
   if (auto it = hints.find("image_path"); it != hints.end()) {
     try {
-      icon = StringUtils::truncateUtf8(it->second.get<std::string>(), k_max_string_len);
+      icon = StringUtils::truncateUtf8(it->second.get<std::string>(), kMaxStringLen);
     } catch (...) {
     }
   }
@@ -249,7 +249,7 @@ uint32_t NotificationService::onNotify(const std::string& app_name, uint32_t rep
   std::optional<std::string> category;
   if (auto it = hints.find("category"); it != hints.end()) {
     try {
-      category = StringUtils::truncateUtf8(it->second.get<std::string>(), k_max_string_len);
+      category = StringUtils::truncateUtf8(it->second.get<std::string>(), kMaxStringLen);
     } catch (...) {
     }
   }
@@ -257,16 +257,16 @@ uint32_t NotificationService::onNotify(const std::string& app_name, uint32_t rep
   std::optional<std::string> desktopEntry;
   if (auto it = hints.find("desktop-entry"); it != hints.end()) {
     try {
-      desktopEntry = StringUtils::truncateUtf8(it->second.get<std::string>(), k_max_string_len);
+      desktopEntry = StringUtils::truncateUtf8(it->second.get<std::string>(), kMaxStringLen);
     } catch (...) {
     }
   }
 
   std::optional<NotificationImageData> imageData = decodeImageHint(hints);
 
-  return m_manager.addOrReplace(replaces_id, StringUtils::truncateUtf8(app_name, k_max_string_len),
-                                StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(summary, k_max_string_len)),
-                                StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(body, k_max_string_len)), urgency,
+  return m_manager.addOrReplace(replaces_id, StringUtils::truncateUtf8(app_name, kMaxStringLen),
+                                StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(summary, kMaxStringLen)),
+                                StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(body, kMaxStringLen)), urgency,
                                 timeout, NotificationOrigin::External, sanitizedActions, icon, imageData, category,
                                 desktopEntry);
 }
@@ -304,9 +304,7 @@ void NotificationService::emitClose(uint32_t id, CloseReason reason) {
     return;
   }
   try {
-    m_object->emitSignal("NotificationClosed")
-        .onInterface(k_interface)
-        .withArguments(id, static_cast<uint32_t>(reason));
+    m_object->emitSignal("NotificationClosed").onInterface(kInterface).withArguments(id, static_cast<uint32_t>(reason));
     m_bus.connection().processPendingEvent();
   } catch (const sdbus::Error& e) {
     kLog.debug("notification #{}: NotificationClosed emit failed: {}", id, e.what());
@@ -314,7 +312,7 @@ void NotificationService::emitClose(uint32_t id, CloseReason reason) {
 }
 
 void NotificationService::onInvokeAction(uint32_t id, const std::string& actionKey) {
-  const std::string sanitizedKey = StringUtils::truncateUtf8(actionKey, k_max_string_len);
+  const std::string sanitizedKey = StringUtils::truncateUtf8(actionKey, kMaxStringLen);
   if (sanitizedKey.empty()) {
     throw sdbus::Error(sdbus::Error::Name{"org.freedesktop.Notifications.Error.InvalidAction"},
                        "action_key must not be empty");
@@ -340,7 +338,7 @@ void NotificationService::emitActionInvoked(uint32_t id, const std::string& acti
     return;
   }
   try {
-    m_object->emitSignal("ActionInvoked").onInterface(k_interface).withArguments(id, actionKey);
+    m_object->emitSignal("ActionInvoked").onInterface(kInterface).withArguments(id, actionKey);
     m_bus.connection().processPendingEvent();
   } catch (const sdbus::Error& e) {
     kLog.debug("notification #{}: ActionInvoked emit failed key='{}': {}", id, actionKey, e.what());

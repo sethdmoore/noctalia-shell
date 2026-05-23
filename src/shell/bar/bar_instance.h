@@ -44,6 +44,8 @@ struct BarInstance {
   float slideHiddenDy = 0.0f;
   InputDispatcher inputDispatcher;
   float hideOpacity = 1.0f;
+  // bar-hide/toggle IPC on non-autohide bars: release compositor exclusive zone until bar-show (v4 isVisible=false).
+  bool ipcLayoutReleased = false;
   bool pointerInside = false;
   float lastPointerSx = 0.0f;
   float lastPointerSy = 0.0f;

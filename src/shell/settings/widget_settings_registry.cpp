@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <iterator>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -72,6 +73,15 @@ namespace settings {
 
     std::string widgetGlyph(std::string_view type, const WidgetConfig* config = nullptr) {
       if (config == nullptr) {
+        return defaultWidgetGlyph(type);
+      }
+      if (type == "scripted") {
+        if (const std::string script = config->getString("script", ""); !script.empty()) {
+          if (auto manifest = scripting::manifestForScriptConfig(script);
+              manifest.has_value() && !manifest->icon.empty()) {
+            return manifest->icon;
+          }
+        }
         return defaultWidgetGlyph(type);
       }
       if (type == "clipboard") {
@@ -210,6 +220,12 @@ namespace settings {
       if (name == "input_volume") {
         return tr("settings.widgets.instances.input-volume");
       }
+      if (name == "network_tx") {
+        return tr("settings.widgets.instances.network-tx");
+      }
+      if (name == "network_rx") {
+        return tr("settings.widgets.instances.network-rx");
+      }
       return std::string(name);
     }
 
@@ -244,7 +260,9 @@ namespace settings {
 
   bool isBuiltInWidgetType(std::string_view type) { return findWidgetTypeSpec(type) != nullptr; }
 
-  bool widgetTypeRequiresNamedConfig(std::string_view type) { return type == "custom_button" || type == "scripted"; }
+  bool widgetTypeRequiresNamedConfig(std::string_view type) {
+    return type == "custom_button" || type == "scripted" || type == "spacer";
+  }
 
   std::string widgetTypeForReference(const Config& cfg, std::string_view name) {
     if (const auto it = cfg.widgets.find(std::string(name)); it != cfg.widgets.end() && !it->second.type.empty()) {
@@ -294,8 +312,17 @@ namespace settings {
     }
 
     if (const auto it = cfg.widgets.find(std::string(name)); it != cfg.widgets.end()) {
+      std::string title = widgetInstanceDisplayLabel(name);
+      if (it->second.type == "scripted") {
+        if (const std::string script = it->second.getString("script", ""); !script.empty()) {
+          if (auto manifest = scripting::manifestForScriptConfig(script);
+              manifest.has_value() && !manifest->label.empty()) {
+            title = manifest->label;
+          }
+        }
+      }
       return WidgetReferenceInfo{
-          .title = widgetInstanceDisplayLabel(name),
+          .title = std::move(title),
           .detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom") : it->second.type,
           .badge = tr("settings.entities.widget.kinds.named"),
           .kind = WidgetReferenceKind::Named,
@@ -331,9 +358,33 @@ namespace settings {
       if (isBuiltInWidgetType(name)) {
         continue;
       }
-      addPickerEntry(entries, seen, name, widgetInstanceDisplayLabel(name),
+      std::string label = widgetInstanceDisplayLabel(name);
+      if (widget.type == "scripted") {
+        if (const std::string script = widget.getString("script", ""); !script.empty()) {
+          if (auto manifest = scripting::manifestForScriptConfig(script);
+              manifest.has_value() && !manifest->label.empty()) {
+            label = manifest->label;
+          }
+        }
+      }
+      addPickerEntry(entries, seen, name, label,
                      widget.type.empty() ? tr("settings.entities.widget.detail.custom") : widget.type,
                      widgetGlyph(widget.type, &widget), WidgetReferenceKind::Named);
+    }
+
+    // Bundled scripted widgets that declare a Lua manifest appear as one-click presets.
+    for (auto& script : scripting::discoverBundledScriptedWidgets()) {
+      if (!seen.insert(script.id).second) {
+        continue;
+      }
+      entries.push_back(WidgetPickerEntry{
+          .value = script.id,
+          .label = script.manifest.label.empty() ? script.id : script.manifest.label,
+          .description = script.manifest.description,
+          .icon = script.manifest.icon.empty() ? "script" : script.manifest.icon,
+          .script = script.assetScript,
+          .kind = WidgetReferenceKind::Preset,
+      });
     }
 
     for (const auto& bar : cfg.bars) {
@@ -429,6 +480,11 @@ namespace settings {
         {"always", "settings.widgets.options.always"},
         {"on_hover", "settings.widgets.options.on-hover"},
     };
+    const std::vector<WidgetSettingSelectOption> activeWindowDisplay = {
+        {"icon_and_text", "settings.widgets.options.icon-and-text"},
+        {"icon_only", "settings.widgets.options.icon-only"},
+        {"text_only", "settings.widgets.options.text-only"},
+    };
     const std::vector<WidgetSettingSelectOption> scriptedScopes = {
         {"instance", "settings.widgets.options.instance"},
         {"shared", "settings.widgets.options.shared"},
@@ -442,6 +498,11 @@ namespace settings {
       add(doubleSpec("max_length", 260.0, 40.0, 800.0, 1.0));
       add(doubleSpec("icon_size", static_cast<double>(Style::fontSizeBody), 8.0, 64.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
+      {
+        auto display = selectSpec("display", "icon_and_text", activeWindowDisplay);
+        display.descriptionKey = "settings.widgets.settings.display.active-window-description";
+        add(std::move(display));
+      }
     } else if (type == "audio_visualizer") {
       add(doubleSpec("width", 56.0, 8.0, 400.0, 1.0));
       add(intSpec("bands", 16, 2.0, 128.0, 1.0));
@@ -460,6 +521,8 @@ namespace settings {
       add(selectSpec("display_mode", "icon",
                      {{"icon", "settings.widgets.options.icon"}, {"graphic", "settings.widgets.options.graphic"}}));
       add(boolSpec("show_label", true));
+      add(boolSpec("hide_when_plugged", false));
+      add(boolSpec("hide_when_full", false));
       add(selectSpec("device", "auto", {{"auto", "common.states.auto"}}));
       add(intSpec("warning_threshold", 20, 0.0, 100.0, 1.0));
       {
@@ -509,6 +572,7 @@ namespace settings {
       add(doubleSpec("max_length", 220.0, 40.0, 800.0, 1.0));
       add(doubleSpec("art_size", 16.0, 8.0, 96.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
+      add(boolSpec("hide_when_no_media", false));
     } else if (type == "network") {
       add(boolSpec("show_label", true));
     } else if (type == "notifications") {
@@ -522,7 +586,7 @@ namespace settings {
     } else if (type == "settings") {
       add(stringSpec("glyph", "settings"));
     } else if (type == "spacer") {
-      add(doubleSpec("length", 8.0, 0.0, 400.0, 1.0));
+      add(doubleSpec("length", 20.0, 0.0, 400.0, 1.0));
     } else if (type == "sysmon") {
       add(selectSpec("stat", "cpu_usage", sysmonStats));
       {
@@ -559,19 +623,41 @@ namespace settings {
             WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(hideEmpty));
       }
+      {
+        auto groupCapsule = boolSpec("workspace_group_capsule", true);
+        groupCapsule.descriptionKey = "settings.widgets.settings.workspace_group_capsule.description";
+        groupCapsule.visibleWhen =
+            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        add(std::move(groupCapsule));
+      }
+      const WidgetSettingVisibility groupedWorkspaceSettings{
+          WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+      {
+        auto focusedColor = colorSpec("focused_color", "primary");
+        focusedColor.visibleWhen = groupedWorkspaceSettings;
+        add(std::move(focusedColor));
+      }
+      {
+        auto occupiedColor = colorSpec("occupied_color", "secondary");
+        occupiedColor.visibleWhen = groupedWorkspaceSettings;
+        add(std::move(occupiedColor));
+      }
+      {
+        auto emptyColor = colorSpec("empty_color", "secondary");
+        emptyColor.visibleWhen = groupedWorkspaceSettings;
+        add(std::move(emptyColor));
+      }
       for (auto& spec : specs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";
-          spec.visibleWhen = WidgetSettingVisibility{
-              WidgetSettingVisibilityCondition{"capsule", {"true"}},
-              WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}},
-          };
+          spec.visibleWhen = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
           break;
         }
       }
     } else if (type == "tray") {
       add(stringListSpec("hidden"));
       add(stringListSpec("pinned"));
+      add(boolSpec("match_adjacent_spacing", false));
       add(boolSpec("drawer", false));
       {
         auto cols = intSpec("drawer_columns", 3, 1.0, 5.0, 1.0);
@@ -587,12 +673,18 @@ namespace settings {
       add(doubleSpec("max_length", 160.0, 40.0, 800.0, 1.0));
       add(boolSpec("show_condition", true));
     } else if (type == "workspaces") {
+      const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
       for (auto& spec : specs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.workspaces-description";
-          spec.visibleWhen.reset();
+          spec.visibleWhen = pillStyleOnly;
           break;
         }
+      }
+      {
+        auto minimal = boolSpec("minimal", false);
+        minimal.descriptionKey = "settings.widgets.settings.minimal.workspaces-description";
+        add(std::move(minimal));
       }
       add(segmentedSpec("display", "id", workspaceDisplay));
       {
@@ -606,8 +698,9 @@ namespace settings {
         add(std::move(maxLabelChars));
       }
       {
-        auto pillScale = doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.1);
+        auto pillScale = doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.05);
         pillScale.descriptionKey = "settings.widgets.settings.pill_scale.workspaces-description";
+        pillScale.visibleWhen = pillStyleOnly;
         add(std::move(pillScale));
       }
       {
@@ -625,6 +718,82 @@ namespace settings {
     }
 
     return specs;
+  }
+
+  std::vector<WidgetSettingSpec> manifestSettingSpecs(const scripting::ScriptWidgetManifest& manifest) {
+    std::vector<WidgetSettingSpec> specs;
+    specs.reserve(manifest.settings.size());
+    for (const auto& field : manifest.settings) {
+      WidgetSettingSpec spec;
+      spec.key = field.key;
+      spec.literalLabel = field.label.empty() ? field.key : field.label;
+      spec.literalDescription = field.description;
+      spec.advanced = field.advanced;
+      spec.minValue = field.minValue;
+      spec.maxValue = field.maxValue;
+      spec.step = field.step;
+
+      switch (field.type) {
+      case scripting::ManifestFieldType::Bool:
+        spec.valueType = WidgetSettingValueType::Bool;
+        spec.defaultValue = field.boolDefault;
+        break;
+      case scripting::ManifestFieldType::Int:
+        spec.valueType = WidgetSettingValueType::Int;
+        spec.defaultValue = static_cast<std::int64_t>(field.numberDefault);
+        break;
+      case scripting::ManifestFieldType::Double:
+        spec.valueType = WidgetSettingValueType::Double;
+        spec.defaultValue = field.numberDefault;
+        break;
+      case scripting::ManifestFieldType::Select:
+        spec.valueType = WidgetSettingValueType::Select;
+        spec.defaultValue = field.stringDefault;
+        spec.literalLabels = true;
+        for (const auto& opt : field.options) {
+          spec.options.push_back(WidgetSettingSelectOption{.value = opt.value, .labelKey = opt.label});
+        }
+        break;
+      case scripting::ManifestFieldType::Color:
+        spec.valueType = WidgetSettingValueType::ColorSpec;
+        spec.defaultValue = field.stringDefault;
+        break;
+      case scripting::ManifestFieldType::String:
+      default:
+        spec.valueType = WidgetSettingValueType::String;
+        spec.defaultValue = field.stringDefault;
+        break;
+      }
+
+      if (field.visibleWhen.has_value()) {
+        spec.visibleWhen = WidgetSettingVisibility{field.visibleWhen->key, field.visibleWhen->values};
+      }
+      specs.push_back(std::move(spec));
+    }
+    return specs;
+  }
+
+  std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type, const WidgetConfig* config) {
+    if (type == "scripted" && config != nullptr) {
+      const std::string script = config->getString("script", "");
+      if (!script.empty()) {
+        if (auto manifest = scripting::manifestForScriptConfig(script); manifest.has_value()) {
+          std::vector<WidgetSettingSpec> specs = commonWidgetSettingSpecs();
+          auto fromManifest = manifestSettingSpecs(*manifest);
+          specs.insert(specs.end(), std::make_move_iterator(fromManifest.begin()),
+                       std::make_move_iterator(fromManifest.end()));
+          // Power users keep the raw scripted knobs, tucked under "advanced".
+          const std::vector<WidgetSettingSelectOption> scriptedScopes = {
+              {.value = "instance", .labelKey = "settings.widgets.options.instance"},
+              {.value = "shared", .labelKey = "settings.widgets.options.shared"},
+          };
+          specs.push_back(selectSpec("scope", "instance", scriptedScopes, true));
+          specs.push_back(boolSpec("hot_reload", false, true));
+          return specs;
+        }
+      }
+    }
+    return widgetSettingSpecs(type);
   }
 
   namespace {
@@ -659,14 +828,14 @@ namespace settings {
 
   } // namespace
 
-  const WidgetSettingSpec* findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey) {
+  std::optional<WidgetSettingSpec> findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey) {
     const std::string key(settingKey);
     for (const auto& spec : widgetSettingSpecs(widgetType)) {
       if (spec.key == key) {
-        return &spec;
+        return spec;
       }
     }
-    return nullptr;
+    return std::nullopt;
   }
 
   bool configOverrideValueMatchesWidgetSetting(const ConfigOverrideValue& overrideValue,
@@ -729,8 +898,12 @@ namespace settings {
 
   bool widgetOverrideValueMatchesRegistryDefault(std::string_view widgetType, std::string_view settingKey,
                                                  const ConfigOverrideValue& overrideValue) {
-    const auto* spec = findWidgetSettingSpec(widgetType, settingKey);
-    if (spec == nullptr) {
+    const auto spec = findWidgetSettingSpec(widgetType, settingKey);
+    if (!spec.has_value()) {
+      return false;
+    }
+    // OptionalDouble unset means inherit/auto, 0 is a valid explicit radius and must persist.
+    if (spec->valueType == WidgetSettingValueType::OptionalDouble) {
       return false;
     }
     return configOverrideValueMatchesWidgetSetting(overrideValue, spec->defaultValue);
@@ -738,6 +911,19 @@ namespace settings {
 
   bool widgetSettingOverrideIsEffective(std::string_view widgetName, std::string_view settingKey,
                                         const Config& withOverride, const Config& withoutOverride) {
+    const auto valueInConfig = [](const Config& cfg, std::string_view name,
+                                  std::string_view key) -> std::optional<WidgetSettingValue> {
+      const auto widgetIt = cfg.widgets.find(std::string(name));
+      if (widgetIt == cfg.widgets.end()) {
+        return std::nullopt;
+      }
+      const auto settingIt = widgetIt->second.settings.find(std::string(key));
+      if (settingIt == widgetIt->second.settings.end()) {
+        return std::nullopt;
+      }
+      return settingIt->second;
+    };
+
     std::string widgetType(widgetName);
     if (const auto withIt = withOverride.widgets.find(std::string(widgetName)); withIt != withOverride.widgets.end()) {
       widgetType = withIt->second.type;
@@ -746,41 +932,28 @@ namespace settings {
       widgetType = withoutIt->second.type;
     }
 
-    const auto* spec = findWidgetSettingSpec(widgetType, settingKey);
-    if (spec == nullptr) {
-      const auto valueInConfig = [](const Config& cfg, std::string_view name,
-                                    std::string_view key) -> std::optional<WidgetSettingValue> {
-        const auto widgetIt = cfg.widgets.find(std::string(name));
-        if (widgetIt == cfg.widgets.end()) {
-          return std::nullopt;
-        }
-        const auto settingIt = widgetIt->second.settings.find(std::string(key));
-        if (settingIt == widgetIt->second.settings.end()) {
-          return std::nullopt;
-        }
-        return settingIt->second;
-      };
-
-      const auto withValue = valueInConfig(withOverride, widgetName, settingKey);
-      const auto withoutValue = valueInConfig(withoutOverride, widgetName, settingKey);
-      if (!withValue.has_value() && !withoutValue.has_value()) {
-        return false;
-      }
-      if (!withValue.has_value() || !withoutValue.has_value()) {
-        return true;
-      }
+    const auto spec = findWidgetSettingSpec(widgetType, settingKey);
+    const auto withValue = valueInConfig(withOverride, widgetName, settingKey);
+    const auto withoutValue = valueInConfig(withoutOverride, widgetName, settingKey);
+    if (!withValue.has_value() && !withoutValue.has_value()) {
+      return false;
+    }
+    if (!withValue.has_value() || !withoutValue.has_value()) {
+      return true;
+    }
+    if (spec.has_value() && spec->valueType == WidgetSettingValueType::OptionalDouble) {
+      return !widgetSettingValuesEqual(*withValue, *withoutValue);
+    }
+    if (!spec.has_value()) {
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
 
+    const WidgetSettingValue defaultValue = spec->defaultValue;
     const auto resolvedValue = [&](const Config& cfg) -> WidgetSettingValue {
-      const auto widgetIt = cfg.widgets.find(std::string(widgetName));
-      if (widgetIt != cfg.widgets.end()) {
-        const auto settingIt = widgetIt->second.settings.find(std::string(settingKey));
-        if (settingIt != widgetIt->second.settings.end()) {
-          return settingIt->second;
-        }
+      if (const auto value = valueInConfig(cfg, widgetName, settingKey); value.has_value()) {
+        return *value;
       }
-      return spec->defaultValue;
+      return defaultValue;
     };
 
     return !widgetSettingValuesEqual(resolvedValue(withOverride), resolvedValue(withoutOverride));
