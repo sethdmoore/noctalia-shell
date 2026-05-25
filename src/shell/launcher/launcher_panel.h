@@ -53,6 +53,7 @@ private:
   void activateSelected();
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void applyEmptyState();
+  [[nodiscard]] std::vector<LauncherResult> providerOverviewResults(std::string_view text) const;
   void openAppActionsMenu(std::size_t index, float anchorX, float anchorY);
   void rebuildCategoryFilter(const std::vector<LauncherCategory>& categories);
   void setCategoryFilterVisible(bool visible);

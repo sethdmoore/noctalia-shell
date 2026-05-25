@@ -18,6 +18,7 @@
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/fuzzy_match.h"
+#include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
@@ -25,6 +26,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <string_view>
 
 namespace {
 
@@ -33,6 +35,8 @@ namespace {
   constexpr float kIconSize = 40.0f;
   constexpr double kUsageScorePerCount = 0.1;
   constexpr double kTypedUsageScoreCap = 0.5;
+  constexpr std::string_view kProviderOverviewProviderName = "__launcher_provider_overview__";
+  constexpr std::string_view kProviderOverviewResultPrefix = "provider:";
 
   double usageBoostForScore(double score, int usageCount, bool typedQuery) {
     if (usageCount <= 0) {
@@ -50,6 +54,14 @@ namespace {
     // For typed searches, usage should nudge close matches without letting a
     // weak fuzzy hit outrank a much stronger lexical match.
     return std::min(rawBoost, kTypedUsageScoreCap);
+  }
+
+  [[nodiscard]] bool startsWithSlash(std::string_view text) { return !text.empty() && text.front() == '/'; }
+
+  [[nodiscard]] std::string providerOverviewId(std::string_view prefix) {
+    std::string id(kProviderOverviewResultPrefix);
+    id += prefix;
+    return id;
   }
 
   float launcherRowHeight(float scale) {
@@ -494,15 +506,16 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     if (prefix.empty()) {
       continue;
     }
-    if (text.size() >= prefix.size() && std::string_view(text).substr(0, prefix.size()) == prefix) {
+    if (text.size() >= prefix.size()
+        && std::string_view(text).substr(0, prefix.size()) == prefix
+        && (activeProvider == nullptr || prefix.size() > activeProvider->prefix().size())) {
       activeProvider = provider.get();
       queryText = std::string_view(text).substr(prefix.size());
-      // Trim leading space after prefix
-      if (!queryText.empty() && queryText.front() == ' ') {
-        queryText = queryText.substr(1);
-      }
-      break;
     }
+  }
+  // Trim leading space after prefix
+  if (activeProvider != nullptr && !queryText.empty() && queryText.front() == ' ') {
+    queryText = queryText.substr(1);
   }
 
   const bool typedQuery = !queryText.empty();
@@ -526,6 +539,8 @@ void LauncherPanel::onInputChanged(const std::string& text) {
       result.providerName = activeProvider->name();
     }
     newCategories = activeProvider->categories();
+  } else if (startsWithSlash(text)) {
+    m_allResults = providerOverviewResults(text);
   } else {
     // Query default providers (empty prefix)
     for (auto& provider : m_providers) {
@@ -621,6 +636,46 @@ void LauncherPanel::setCategoryFilterVisible(bool visible) {
   if (m_container != nullptr) {
     m_container->markLayoutDirty();
   }
+}
+
+std::vector<LauncherResult> LauncherPanel::providerOverviewResults(std::string_view text) const {
+  std::string filter;
+  if (startsWithSlash(text)) {
+    filter = StringUtils::toLower(StringUtils::trim(text.substr(1)));
+  }
+
+  std::vector<LauncherResult> results;
+  results.reserve(m_providers.size());
+  for (const auto& provider : m_providers) {
+    const std::string_view prefix = provider->prefix();
+    if (prefix.empty()) {
+      continue;
+    }
+
+    const std::string title(provider->displayName());
+    const std::string prefixText(prefix);
+    const std::string searchable = StringUtils::toLower(title + " " + prefixText);
+    const double score = filter.empty() ? 0.0 : FuzzyMatch::score(filter, searchable);
+    if (!filter.empty() && !FuzzyMatch::isMatch(score)) {
+      continue;
+    }
+
+    LauncherResult result;
+    result.id = providerOverviewId(prefix);
+    result.providerName = std::string(kProviderOverviewProviderName);
+    result.title = title;
+    result.subtitle = prefixText;
+    result.glyphName = std::string(provider->defaultGlyphName());
+    result.score = score;
+    results.push_back(std::move(result));
+  }
+
+  if (!filter.empty()) {
+    std::stable_sort(results.begin(), results.end(), [](const LauncherResult& a, const LauncherResult& b) {
+      return a.score > b.score;
+    });
+  }
+  return results;
 }
 
 void LauncherPanel::applyActiveCategory() {
@@ -796,6 +851,20 @@ void LauncherPanel::activateSelected() {
   }
 
   const auto& result = m_results[m_selectedIndex];
+  if (result.providerName == kProviderOverviewProviderName && result.id.starts_with(kProviderOverviewResultPrefix)) {
+    std::string prefix = result.id.substr(kProviderOverviewResultPrefix.size());
+    if (!prefix.empty()) {
+      prefix += ' ';
+    }
+    if (m_input != nullptr) {
+      m_input->setValue(prefix);
+    }
+    if (m_grid != nullptr) {
+      m_grid->scrollView().setScrollOffset(0.0f);
+    }
+    onInputChanged(prefix);
+    return;
+  }
 
   // Dispatch only to the provider that produced this result. Providers can use
   // overlapping id shapes, so probing every provider risks side effects.

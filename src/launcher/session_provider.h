@@ -11,6 +11,7 @@ public:
 
   [[nodiscard]] std::string_view prefix() const override { return "/session"; }
   [[nodiscard]] std::string_view name() const override { return "Session"; }
+  [[nodiscard]] std::string_view defaultGlyphName() const override { return "power"; }
 
   [[nodiscard]] std::vector<LauncherResult> query(std::string_view text) const override;
 

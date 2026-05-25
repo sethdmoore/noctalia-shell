@@ -30,6 +30,8 @@ public:
 
   [[nodiscard]] virtual std::string_view prefix() const = 0;
   [[nodiscard]] virtual std::string_view name() const = 0;
+  [[nodiscard]] virtual std::string_view displayName() const { return name(); }
+  [[nodiscard]] virtual std::string_view defaultGlyphName() const { return "search"; }
 
   // Return true to opt in to usage-based score boosting. The panel will
   // record each activation and surface frequently used entries higher.

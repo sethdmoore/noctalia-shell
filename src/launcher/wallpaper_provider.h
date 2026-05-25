@@ -11,6 +11,7 @@ public:
 
   [[nodiscard]] std::string_view prefix() const override { return "/wall"; }
   [[nodiscard]] std::string_view name() const override { return "Wallpaper"; }
+  [[nodiscard]] std::string_view defaultGlyphName() const override { return "wallpaper-selector"; }
   [[nodiscard]] bool trackUsage() const override { return true; }
 
   [[nodiscard]] std::vector<LauncherResult> query(std::string_view text) const override;

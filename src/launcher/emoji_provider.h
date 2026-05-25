@@ -13,6 +13,7 @@ public:
 
   [[nodiscard]] std::string_view prefix() const override { return "/emo"; }
   [[nodiscard]] std::string_view name() const override { return "Emoji"; }
+  [[nodiscard]] std::string_view defaultGlyphName() const override { return "mood-smile-beam"; }
 
   void initialize() override;
 
