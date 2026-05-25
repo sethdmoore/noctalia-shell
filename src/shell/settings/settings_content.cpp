@@ -916,7 +916,6 @@ namespace settings {
       auto titleRow = ui::row(
           {.align = FlexAlign::Center,
            .gap = Style::spaceSm * scale,
-           .fillWidth = true,
            .configure =
                [scale, reserveTitleHeight](Flex& flex) {
                  if (reserveTitleHeight) {
@@ -929,17 +928,24 @@ namespace settings {
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .maxLines = titleMaxTwoLines ? std::optional<int>{2} : std::nullopt,
               .fontWeight = FontWeight::Bold,
-          }),
-          ui::spacer()
+          })
       );
-      if (overridden) {
-        titleRow->addChild(makeOverrideResetActions(entry.path));
+      ui::FlexProps copyProps{.align = FlexAlign::Start, .flexGrow = 1.0f};
+      if (!compactTitleDescription) {
+        copyProps.gap = Style::spaceXs * scale;
       }
-      block->addChild(std::move(titleRow));
-
+      auto copy = ui::column(std::move(copyProps));
+      copy->addChild(std::move(titleRow));
       if (!entry.subtitle.empty()) {
-        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
+        copy->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
+
+      auto header = ui::row({.align = FlexAlign::Start, .gap = Style::spaceSm * scale, .fillWidth = true});
+      header->addChild(std::move(copy));
+      if (overridden) {
+        header->addChild(makeOverrideResetActions(entry.path));
+      }
+      block->addChild(std::move(header));
       return block;
     };
 
