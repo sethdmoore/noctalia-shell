@@ -126,7 +126,13 @@ namespace {
 
   std::vector<std::string> discoverTerminal(const desktop_entry_launch::PrepareOptions& options) {
     if (!options.terminalCandidates.empty()) {
-      return options.terminalCandidates;
+      for (const auto& candidate : options.terminalCandidates) {
+        std::vector<std::string> terminal = tokenize(candidate);
+        if (!terminal.empty() && isExecutableOnPath(terminal.front())) {
+          return terminal;
+        }
+      }
+      return {};
     }
     if (!options.useSystemTerminalDiscovery) {
       return {};

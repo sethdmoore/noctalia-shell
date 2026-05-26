@@ -1,7 +1,10 @@
 #include "system/desktop_entry_launch.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
 
 namespace {
@@ -37,6 +40,16 @@ namespace {
     return false;
   }
 
+  std::string makeExecutableFixture() {
+    char path[] = "/tmp/noctalia-terminal-fixture-XXXXXX";
+    const int fd = mkstemp(path);
+    if (fd >= 0) {
+      close(fd);
+      chmod(path, 0700);
+    }
+    return path;
+  }
+
 } // namespace
 
 int main() {
@@ -55,12 +68,15 @@ int main() {
       && ok;
 
   desktop_entry_launch::PrepareOptions terminalOptions;
-  terminalOptions.terminalCandidates = {"test-terminal"};
+  const std::string fakeTerminal = makeExecutableFixture();
+  terminalOptions.terminalCandidates = {"missing-terminal-candidate", fakeTerminal};
   ok = expectArgs(
            desktop_entry_launch::prepareCommand("sample --flag", true, terminalOptions),
-           {"test-terminal", "-e", "sh", "-lc", "sample --flag"}, "terminal candidates should wrap the command"
+           {fakeTerminal, "-e", "sh", "-lc", "sample --flag"},
+           "terminal candidates should use the first executable candidate"
        )
       && ok;
+  std::remove(fakeTerminal.c_str());
 
   desktop_entry_launch::PrepareOptions noTerminalDiscovery;
   noTerminalDiscovery.useSystemTerminalDiscovery = false;
