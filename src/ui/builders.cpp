@@ -385,6 +385,9 @@ namespace ui {
     if (props.orientation.has_value()) {
       control->setOrientation(*props.orientation);
     }
+    if (props.gradientEdges.has_value()) {
+      control->setGradientEdges(*props.gradientEdges);
+    }
     applyNodeProps(*control, props);
     if (props.configure) {
       props.configure(*control);

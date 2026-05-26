@@ -213,6 +213,7 @@ namespace ui {
     std::optional<ColorSpec> color = std::nullopt;
     std::optional<float> thickness = std::nullopt;
     std::optional<SeparatorOrientation> orientation = std::nullopt;
+    std::optional<bool> gradientEdges = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
