@@ -17,7 +17,8 @@ sudo dnf install meson gcc-c++ just \
   cairo-devel pango-devel harfbuzz-devel \
   libxkbcommon-devel glib2-devel \
   sdbus-cpp-devel pipewire-devel \
-  pam-devel polkit-devel libcurl-devel libwebp-devel librsvg2-devel
+  pam-devel polkit-devel libcurl-devel libwebp-devel librsvg2-devel \
+  jemalloc-devel
 ```
 
 ### Arch
@@ -29,7 +30,8 @@ sudo pacman -S meson gcc just \
   cairo pango harfbuzz \
   libxkbcommon glib2 \
   sdbus-cpp libpipewire polkit \
-  pam curl libwebp librsvg
+  pam curl libwebp librsvg \
+  jemalloc
 ```
 
 ### Debian / Ubuntu
@@ -43,7 +45,8 @@ sudo apt install meson g++ just \
   libxkbcommon-dev libglib2.0-dev \
   libsdbus-c++-dev libpipewire-0.3-dev \
   libpam0g-dev libpolkit-agent-1-dev libpolkit-gobject-1-dev \
-  libcurl4-openssl-dev libwebp-dev librsvg2-dev
+  libcurl4-openssl-dev libwebp-dev librsvg2-dev \
+  libjemalloc-dev
 ```
 
 ### AerynOS
@@ -57,7 +60,7 @@ sudo moss it meson build-essential \
   sdbus-cpp-devel pipewire-devel \
   linux-pam-devel polkit-devel \
   curl-devel libwebp-devel librsvg-devel \
-  extra-cmake-modules 
+  extra-cmake-modules jemalloc-devel
 ```
 
 ### VoidLinux
@@ -69,7 +72,7 @@ sudo xbps-install meson ninja pkg-config git \
   harfbuzz-devel libxkbcommon-devel pipewire-devel \
   libcurl-devel pam-devel libwebp-devel \
   basu-devel libcurl-devel sdbus-c++-devel \
-  polkit-devel  librsvg-devel
+  polkit-devel librsvg-devel jemalloc-devel
 ```
 
 Vendored dependencies, with no system package needed: `Wuffs`, `tomlplusplus`, `tinyexpr`,
@@ -82,9 +85,9 @@ Polkit agent support requires development files that provide the `polkit-agent-1
 modules. Some distros ship these in the runtime `polkit` package, while split-package distros use names such as
 `polkit-devel`, `polkit-dev`, or `libpolkit-agent-1-dev` / `libpolkit-gobject-1-dev`.
 
-**Optional:** installing `jemalloc` (Fedora: `jemalloc-devel`, Arch: `jemalloc`, Debian/Ubuntu: `libjemalloc-dev`, Void: `jemalloc`)
-reduces memory fragmentation in long-running sessions. On glibc systems it is used automatically when detected. Use
-Meson's `-Djemalloc=enabled` or `-Djemalloc=disabled` option to require or disable it explicitly.
+`jemalloc` is recommended but optional. It reduces memory fragmentation in long-running sessions, and on glibc systems
+it is used automatically when detected. Use Meson's `-Djemalloc=enabled` or `-Djemalloc=disabled` option to require or
+disable it explicitly.
 
 Sanitizer runtime packages are only needed for ASan/UBSan builds configured with `just configure asan`.
 
