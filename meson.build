@@ -54,6 +54,7 @@ polkit_gobject_dep  = dependency('polkit-gobject-1')
 # mark as system so the compiler suppresses those warnings.
 pipewire_dep        = dependency('libpipewire-0.3', include_type: 'system')
 curl_dep            = dependency('libcurl')
+libqalculate_dep    = dependency('libqalculate')
 pam_dep             = cc.find_library('pam')
 dl_dep              = cpp.find_library('dl', required: false)
 
@@ -89,17 +90,6 @@ endif
 if not gles2_dep.found()
   gles2_dep = dependency('epoxy')
 endif
-
-# ── Vendored: tinyexpr (C, needs suppressed warnings) ─────────────────────────
-_tinyexpr_lib = static_library('tinyexpr',
-  'third_party/tinyexpr/tinyexpr.c',
-  c_args: ['-Wno-pedantic', '-Wno-conversion'],
-  override_options: ['warning_level=0'],
-)
-tinyexpr_dep = declare_dependency(
-  link_with: _tinyexpr_lib,
-  include_directories: include_directories('third_party/tinyexpr', is_system: true),
-)
 
 # ── Vendored: dr_wav (single-file WAV decoder) ───────────────────────────────
 _drwav_lib = static_library('dr_wav',
@@ -794,8 +784,8 @@ executable('noctalia',
     polkit_gobject_dep,
     pipewire_dep,
     curl_dep,
+    libqalculate_dep,
     pam_dep,
-    tinyexpr_dep,
     drwav_dep,
     fzy_dep,
     mcu_dep,

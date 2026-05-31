@@ -18,6 +18,7 @@ sudo dnf install meson gcc-c++ just \
   libxkbcommon-devel glib2-devel \
   sdbus-cpp-devel pipewire-devel \
   pam-devel polkit-devel libcurl-devel libwebp-devel librsvg2-devel \
+  libqalculate-devel \
   jemalloc-devel
 ```
 
@@ -31,6 +32,7 @@ sudo pacman -S meson gcc just \
   libxkbcommon glib2 \
   sdbus-cpp libpipewire polkit \
   pam curl libwebp librsvg \
+  libqalculate \
   jemalloc
 ```
 
@@ -46,6 +48,7 @@ sudo apt install meson g++ just \
   libsdbus-c++-dev libpipewire-0.3-dev \
   libpam0g-dev libpolkit-agent-1-dev libpolkit-gobject-1-dev \
   libcurl4-openssl-dev libwebp-dev librsvg2-dev \
+  libqalculate-dev \
   libjemalloc-dev
 ```
 
@@ -60,6 +63,7 @@ sudo moss it meson build-essential \
   sdbus-cpp-devel pipewire-devel \
   linux-pam-devel polkit-devel \
   curl-devel libwebp-devel librsvg-devel \
+  libqalculate-devel \
   extra-cmake-modules jemalloc-devel
 ```
 
@@ -72,14 +76,15 @@ sudo xbps-install meson ninja pkg-config git \
   harfbuzz-devel libxkbcommon-devel pipewire-devel \
   libcurl-devel pam-devel libwebp-devel \
   basu-devel libcurl-devel sdbus-c++-devel \
-  polkit-devel librsvg-devel jemalloc-devel
+  polkit-devel librsvg-devel libqalculate-devel jemalloc-devel
 ```
 
-Vendored dependencies, with no system package needed: `Wuffs`, `tomlplusplus`, `tinyexpr`,
+Vendored dependencies, with no system package needed: `Wuffs`, `tomlplusplus`,
 `nlohmann/json`, `Luau`, `dr_wav`, `fzy`, `stb_image_resize2`, and Material Color Utilities.
 
 System packages required beyond the Wayland/GL stack: `libwebp` handles WebP decoding and thumbnail encoding. Wuffs
-handles the other supported raster image formats.
+handles the other supported raster image formats. `libqalculate` powers the launcher calculator (arithmetic, unit and
+currency conversion).
 
 Polkit agent support requires development files that provide the `polkit-agent-1` and `polkit-gobject-1` pkg-config
 modules. Some distros ship these in the runtime `polkit` package, while split-package distros use names such as
