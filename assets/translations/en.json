@@ -2175,6 +2175,10 @@
           "label": "Edge Smoothness",
           "description": "Feathering of transition edges between wallpapers"
         },
+        "transition-on-startup": {
+          "label": "Animate on Startup",
+          "description": "Play a transition when the shell first shows a wallpaper, like v4"
+        },
         "automation": {
           "label": "Automatic Rotation",
           "description": "Cycle wallpapers automatically on a timer"

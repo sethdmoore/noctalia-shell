@@ -468,6 +468,7 @@ namespace config_export {
       table.insert_or_assign("transition", wallpaperTransitionArray(wallpaper.transitions));
       table.insert_or_assign("transition_duration", static_cast<double>(wallpaper.transitionDurationMs));
       table.insert_or_assign("edge_smoothness", static_cast<double>(wallpaper.edgeSmoothness));
+      table.insert_or_assign("transition_on_startup", wallpaper.transitionOnStartup);
       table.insert_or_assign("directory", wallpaper.directory);
       table.insert_or_assign("directory_light", wallpaper.directoryLight);
       table.insert_or_assign("directory_dark", wallpaper.directoryDark);

@@ -359,6 +359,7 @@ struct WallpaperConfig {
                                                   WallpaperTransition::Zoom, WallpaperTransition::Honeycomb};
   float transitionDurationMs = 1500.0f;
   float edgeSmoothness = 0.3f;
+  bool transitionOnStartup = false;
   std::string directory;
   std::string directoryLight;
   std::string directoryDark;

@@ -806,7 +806,19 @@ void Wallpaper::loadWallpaper(WallpaperInstance& instance, const std::string& pa
   }
 
   if (instance.currentPath.empty()) {
-    // First wallpaper — display immediately, no transition
+    const auto& wpConfig = m_config->config().wallpaper;
+    if (wpConfig.transitionOnStartup && !wpConfig.transitions.empty()) {
+      instance.currentSourceKind = WallpaperSourceKind::Color;
+      instance.currentTexture = {};
+      instance.currentColor = rgba(0.0f, 0.0f, 0.0f, 1.0f);
+      instance.nextSourceKind = newSourceKind;
+      instance.nextTexture = newTex;
+      instance.nextColor = newColor;
+      instance.pendingPath = path;
+      startTransition(instance);
+      return;
+    }
+
     instance.currentSourceKind = newSourceKind;
     instance.currentTexture = newTex;
     instance.currentColor = newColor;

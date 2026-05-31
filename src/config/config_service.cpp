@@ -1868,6 +1868,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       wp.transitionDurationMs = std::clamp(static_cast<float>(*v), 100.0f, 30000.0f);
     if (auto v = finiteDouble((*wpTbl)["edge_smoothness"]))
       wp.edgeSmoothness = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+    if (auto v = (*wpTbl)["transition_on_startup"].value<bool>())
+      wp.transitionOnStartup = *v;
     if (auto v = (*wpTbl)["directory"].value<std::string>())
       wp.directory = expandUserPathString(*v);
     if (auto v = (*wpTbl)["directory_light"].value<std::string>())

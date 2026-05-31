@@ -604,6 +604,11 @@ namespace settings {
         SliderSetting{cfg.wallpaper.edgeSmoothness, 0.0f, 1.0f, 0.01f, false}, "transition feathering", true
     ));
     entries.push_back(makeEntry(
+        "wallpaper", "transition", tr("settings.schema.wallpaper.transition-on-startup.label"),
+        tr("settings.schema.wallpaper.transition-on-startup.description"), {"wallpaper", "transition_on_startup"},
+        ToggleSetting{cfg.wallpaper.transitionOnStartup}, "startup animation"
+    ));
+    entries.push_back(makeEntry(
         "wallpaper", "automation", tr("settings.schema.wallpaper.automation.label"),
         tr("settings.schema.wallpaper.automation.description"), {"wallpaper", "automation", "enabled"},
         ToggleSetting{cfg.wallpaper.automation.enabled}, "rotate slideshow"
