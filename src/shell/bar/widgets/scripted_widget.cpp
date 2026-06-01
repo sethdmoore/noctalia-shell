@@ -10,6 +10,7 @@
 #include "pipewire/pipewire_spectrum.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
+#include "scripting/script_api_context.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -124,12 +125,12 @@ namespace {
 
 ScriptedWidget::ScriptedWidget(
     std::string configName, std::string scriptPath, std::string barName, std::string outputName,
-    const WidgetConfig* config, FileWatcher* fileWatcher, CompositorPlatform* platform, ClipboardService* clipboard,
-    PipeWireSpectrum* audioSpectrum, MprisService* mpris
+    scripting::ScriptApiContext& scriptApi, const WidgetConfig* config, FileWatcher* fileWatcher,
+    CompositorPlatform* platform, ClipboardService* clipboard, PipeWireSpectrum* audioSpectrum, MprisService* mpris
 )
     : m_scriptPath(std::move(scriptPath)), m_widgetConfigName(std::move(configName)), m_barName(std::move(barName)),
-      m_outputName(std::move(outputName)), m_fileWatcher(fileWatcher), m_platform(platform), m_clipboard(clipboard),
-      m_audioSpectrum(audioSpectrum), m_mpris(mpris), m_timerPhase(nextTimerPhase()) {
+      m_outputName(std::move(outputName)), m_scriptApi(scriptApi), m_fileWatcher(fileWatcher), m_platform(platform),
+      m_clipboard(clipboard), m_audioSpectrum(audioSpectrum), m_mpris(mpris), m_timerPhase(nextTimerPhase()) {
   if (config) {
     m_settings = config->settings;
     m_hotReload = config->getBool("hot_reload", false);
@@ -235,12 +236,13 @@ void ScriptedWidget::create() {
 
   bool createdRuntime = true;
   if (m_sharedScope) {
-    auto acquired = scripting::SharedScriptRuntimeRegistry::acquire(m_widgetConfigName, m_settings, m_clipboard);
+    auto acquired =
+        scripting::SharedScriptRuntimeRegistry::acquire(m_widgetConfigName, m_settings, m_scriptApi, m_clipboard);
     m_runtime = std::move(acquired.runtime);
     createdRuntime = acquired.created;
   } else {
     m_runtime = std::make_shared<scripting::ScriptRuntime>(
-        m_widgetConfigName + ":" + m_barName + ":" + m_outputName, m_settings, m_clipboard
+        m_widgetConfigName + ":" + m_barName + ":" + m_outputName, m_settings, m_scriptApi, m_clipboard
     );
   }
 

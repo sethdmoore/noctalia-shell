@@ -48,6 +48,7 @@
 #include "render/core/thumbnail_service.h"
 #include "render/gl_shared_context.h"
 #include "render/render_context.h"
+#include "scripting/script_api_context.h"
 #include "shell/backdrop/backdrop.h"
 #include "shell/bar/bar.h"
 #include "shell/desktop/desktop_widgets_controller.h"
@@ -146,6 +147,7 @@ private:
   noctalia::theme::CommunityTemplateService m_communityTemplateService{m_httpClient};
   noctalia::theme::ThemeService m_themeService{m_configService, m_httpClient};
   noctalia::theme::TemplateApplyService m_templateApplyService{m_configService};
+  scripting::ScriptApiContext m_scriptApi;
   TimeService m_timeService;
   LockKeysService m_lockKeysService;
   NotificationManager m_notificationManager;

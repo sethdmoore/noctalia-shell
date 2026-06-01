@@ -16,12 +16,13 @@ namespace process {
   struct RunResult;
 }
 namespace scripting {
+  class ScriptApiContext;
   struct ScriptedWidgetBindingContext;
-}
+} // namespace scripting
 
 class LuauHost {
 public:
-  explicit LuauHost(CompositorPlatform* platform = nullptr);
+  explicit LuauHost(scripting::ScriptApiContext& api, CompositorPlatform* platform = nullptr);
   ~LuauHost();
 
   LuauHost(const LuauHost&) = delete;
@@ -58,6 +59,7 @@ public:
 
   lua_State* state() { return m_T; }
   [[nodiscard]] CompositorPlatform* platform() const noexcept { return m_platform; }
+  [[nodiscard]] scripting::ScriptApiContext& api() const noexcept { return m_api; }
   [[nodiscard]] std::uint64_t hostId() const noexcept { return m_hostId; }
   void setScriptContext(scripting::ScriptedWidgetBindingContext* context) { m_scriptContext = context; }
   void setMuteErrors(bool mute) { m_muteErrors = mute; }
@@ -85,6 +87,7 @@ private:
   void endBudget();
 
   std::uint64_t m_hostId = 0;
+  scripting::ScriptApiContext& m_api;
   CompositorPlatform* m_platform = nullptr;
   scripting::ScriptedWidgetBindingContext* m_scriptContext = nullptr;
   lua_State* m_L = nullptr; // main state, frozen by luaL_sandbox

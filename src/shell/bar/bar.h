@@ -40,6 +40,9 @@ class WeatherService;
 namespace noctalia::theme {
   class ThemeService;
 }
+namespace scripting {
+  class ScriptApiContext;
+}
 struct PointerEvent;
 struct wl_surface;
 
@@ -54,7 +57,8 @@ public:
       PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weatherService,
       RenderContext* renderContext, GammaService* nightLight, noctalia::theme::ThemeService* themeService,
       BluetoothService* bluetooth, BrightnessService* brightness, LockKeysService* lockKeys,
-      ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr, ScreenshotService* screenshots = nullptr
+      ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr, ScreenshotService* screenshots = nullptr,
+      scripting::ScriptApiContext* scriptApi = nullptr
   );
   void reload();
   void closeAllInstances();
@@ -156,6 +160,7 @@ private:
   ClipboardService* m_clipboard = nullptr;
   ScreenshotService* m_screenshots = nullptr;
   FileWatcher* m_fileWatcher = nullptr;
+  scripting::ScriptApiContext* m_scriptApi = nullptr;
   std::unique_ptr<WidgetFactory> m_widgetFactory;
   std::vector<std::unique_ptr<BarInstance>> m_instances;
 

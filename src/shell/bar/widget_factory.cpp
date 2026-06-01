@@ -10,6 +10,7 @@
 #include "net/http_client.h"
 #include "notification/notification_manager.h"
 #include "pipewire/pipewire_spectrum.h"
+#include "scripting/script_api_context.h"
 #include "shell/bar/widgets/active_window_widget.h"
 #include "shell/bar/widgets/audio_visualizer_widget.h"
 #include "shell/bar/widgets/battery_widget.h"
@@ -102,14 +103,14 @@ WidgetFactory::WidgetFactory(
     HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
     noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
     LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher, ScreenshotService* screenshots,
-    RenderContext* renderContext
+    RenderContext* renderContext, scripting::ScriptApiContext* scriptApi
 )
     : m_platform(platform), m_configService(config), m_config(config.config()), m_notifications(notifications),
       m_tray(tray), m_audio(audio), m_upower(upower), m_sysmon(sysmon), m_powerProfiles(powerProfiles),
       m_network(network), m_idleInhibitor(idleInhibitor), m_mpris(mpris), m_audioSpectrum(audioSpectrum),
       m_httpClient(httpClient), m_weather(weather), m_nightLight(nightLight), m_themeService(themeService),
       m_bluetooth(bluetooth), m_brightness(brightness), m_lockKeys(lockKeys), m_clipboard(clipboard),
-      m_fileWatcher(fileWatcher), m_screenshots(screenshots), m_renderContext(renderContext) {}
+      m_fileWatcher(fileWatcher), m_screenshots(screenshots), m_renderContext(renderContext), m_scriptApi(scriptApi) {}
 
 WidgetFactory::~WidgetFactory() = default;
 
@@ -339,12 +340,15 @@ std::unique_ptr<Widget> WidgetFactory::create(
   }
 
   if (type == "scripted") {
+    if (m_scriptApi == nullptr) {
+      return nullptr;
+    }
     std::string script = wc != nullptr ? wc->getString("script", "") : std::string();
     const auto* outputInfo = m_platform.findOutputByWl(output);
     const std::string outputName = outputInfo != nullptr ? outputInfo->connectorName : std::string{};
     auto widget = std::make_unique<ScriptedWidget>(
-        name, std::move(script), barName, outputName, wc, m_fileWatcher, &m_platform, m_clipboard, m_audioSpectrum,
-        m_mpris
+        name, std::move(script), barName, outputName, *m_scriptApi, wc, m_fileWatcher, &m_platform, m_clipboard,
+        m_audioSpectrum, m_mpris
     );
     widget->setContentScale(contentScale);
     return widget;

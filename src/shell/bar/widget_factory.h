@@ -32,6 +32,9 @@ class GammaService;
 namespace noctalia::theme {
   class ThemeService;
 }
+namespace scripting {
+  class ScriptApiContext;
+}
 
 class WidgetFactory {
 public:
@@ -42,7 +45,8 @@ public:
       HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
       noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
       LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr,
-      ScreenshotService* screenshots = nullptr, RenderContext* renderContext = nullptr
+      ScreenshotService* screenshots = nullptr, RenderContext* renderContext = nullptr,
+      scripting::ScriptApiContext* scriptApi = nullptr
   );
   ~WidgetFactory();
 
@@ -76,4 +80,5 @@ private:
   FileWatcher* m_fileWatcher;
   ScreenshotService* m_screenshots;
   RenderContext* m_renderContext = nullptr;
+  scripting::ScriptApiContext* m_scriptApi = nullptr;
 };

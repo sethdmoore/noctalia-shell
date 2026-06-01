@@ -4,6 +4,7 @@
 #include "core/log.h"
 #include "notification/notifications.h"
 #include "scripting/luau_host.h"
+#include "scripting/script_api_context.h"
 #include "scripting/script_worker_pool.h"
 #include "scripting/scripted_widget_bindings.h"
 #include "wayland/clipboard_service.h"
@@ -90,12 +91,16 @@ namespace scripting {
   } // namespace
 
   struct ScriptRuntime::State : public std::enable_shared_from_this<ScriptRuntime::State> {
-    explicit State(std::string name, ScriptWidgetSettings widgetSettings, ClipboardService* clipboardService)
-        : runtimeName(std::move(name)), settings(std::move(widgetSettings)), clipboard(clipboardService) {}
+    explicit State(
+        std::string name, ScriptWidgetSettings widgetSettings, ScriptApiContext& api, ClipboardService* clipboardService
+    )
+        : runtimeName(std::move(name)), settings(std::move(widgetSettings)), scriptApi(api),
+          clipboard(clipboardService) {}
 
     mutable std::mutex mutex;
     std::string runtimeName;
     ScriptWidgetSettings settings;
+    ScriptApiContext& scriptApi;
     std::deque<ScriptWidgetEvent> queue;
     std::unordered_map<SubscriberId, ScriptWidgetResultCallback> subscribers;
     std::unique_ptr<LuauHost> host;
@@ -343,7 +348,7 @@ namespace scripting {
     }
 
     ScriptWidgetResult processLoad(const ScriptWidgetEvent& event) {
-      host = std::make_unique<LuauHost>();
+      host = std::make_unique<LuauHost>(scriptApi);
       bindingContext.settings = &settings;
       bindingContext.host = host.get();
       host->setScriptContext(&bindingContext);
@@ -462,8 +467,10 @@ namespace scripting {
     }
   };
 
-  ScriptRuntime::ScriptRuntime(std::string runtimeName, ScriptWidgetSettings settings, ClipboardService* clipboard)
-      : m_state(std::make_shared<State>(std::move(runtimeName), std::move(settings), clipboard)) {}
+  ScriptRuntime::ScriptRuntime(
+      std::string runtimeName, ScriptWidgetSettings settings, ScriptApiContext& api, ClipboardService* clipboard
+  )
+      : m_state(std::make_shared<State>(std::move(runtimeName), std::move(settings), api, clipboard)) {}
 
   ScriptRuntime::~ScriptRuntime() { stop(); }
 
@@ -567,7 +574,7 @@ namespace scripting {
   }
 
   SharedScriptRuntimeAcquireResult SharedScriptRuntimeRegistry::acquire(
-      const std::string& key, ScriptWidgetSettings settings, ClipboardService* clipboard
+      const std::string& key, ScriptWidgetSettings settings, ScriptApiContext& api, ClipboardService* clipboard
   ) {
     static std::mutex mutex;
     static std::unordered_map<std::string, std::weak_ptr<ScriptRuntime>> runtimes;
@@ -579,7 +586,7 @@ namespace scripting {
       }
     }
 
-    auto runtime = std::make_shared<ScriptRuntime>(key, std::move(settings), clipboard);
+    auto runtime = std::make_shared<ScriptRuntime>(key, std::move(settings), api, clipboard);
     runtimes[key] = runtime;
     return {.runtime = std::move(runtime), .created = true};
   }

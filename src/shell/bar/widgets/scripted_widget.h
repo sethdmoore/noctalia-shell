@@ -26,6 +26,9 @@ class CompositorPlatform;
 class ClipboardService;
 class MprisService;
 class PipeWireSpectrum;
+namespace scripting {
+  class ScriptApiContext;
+}
 
 class ScriptedWidget : public Widget {
 public:
@@ -38,8 +41,9 @@ public:
 
   explicit ScriptedWidget(
       std::string configName, std::string scriptPath, std::string barName, std::string outputName,
-      const WidgetConfig* config = nullptr, FileWatcher* fileWatcher = nullptr, CompositorPlatform* platform = nullptr,
-      ClipboardService* clipboard = nullptr, PipeWireSpectrum* audioSpectrum = nullptr, MprisService* mpris = nullptr
+      scripting::ScriptApiContext& scriptApi, const WidgetConfig* config = nullptr, FileWatcher* fileWatcher = nullptr,
+      CompositorPlatform* platform = nullptr, ClipboardService* clipboard = nullptr,
+      PipeWireSpectrum* audioSpectrum = nullptr, MprisService* mpris = nullptr
   );
   ~ScriptedWidget() override;
 
@@ -108,6 +112,7 @@ private:
   std::string m_widgetConfigName;
   std::string m_barName;
   std::string m_outputName;
+  scripting::ScriptApiContext& m_scriptApi;
   std::filesystem::path m_resolvedPath;
   std::filesystem::path m_resolvedImagePath;
   std::unordered_map<std::string, WidgetSettingValue> m_settings;

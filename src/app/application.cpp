@@ -445,6 +445,7 @@ void Application::initServices() {
                                      ) mutable {
     const std::string resolvedMode(mode);
     const std::string configuredMode(enumToKey(kThemeModes, m_themeService.configuredMode()));
+    m_scriptApi.setDarkMode(resolvedMode != "light");
     m_templateApplyService.apply(generated, mode);
     m_hookManager.fire(HookKind::ColorsChanged);
     if (lastResolvedThemeMode.has_value() && *lastResolvedThemeMode != resolvedMode) {
@@ -1261,7 +1262,7 @@ void Application::initUi() {
       m_networkService.get(), &m_idleInhibitor, m_mprisService.get(), m_pipewireSpectrum.get(), &m_httpClient,
       &m_weatherService, &m_renderContext, &m_gammaService, &m_themeService, m_bluetoothService.get(),
       m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr, &m_clipboardService, &m_fileWatcher,
-      &m_screenshotService
+      &m_screenshotService, &m_scriptApi
   );
   m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
     if (m_panelManager.isOpen()) {

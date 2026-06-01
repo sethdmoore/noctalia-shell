@@ -2,6 +2,7 @@
 
 #include "core/resource_paths.h"
 #include "scripting/luau_host.h"
+#include "scripting/script_api_context.h"
 #include "scripting/scripted_widget_bindings.h"
 
 #include <cstdlib>
@@ -37,7 +38,8 @@ namespace scripting {
         return std::nullopt;
       }
 
-      LuauHost host;
+      ScriptApiContext api;
+      LuauHost host(api);
       ScriptedWidgetBindingContext context;
       ScriptWidgetManifest manifest;
       context.host = &host;

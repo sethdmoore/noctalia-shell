@@ -12,12 +12,15 @@ class ClipboardService;
 
 namespace scripting {
 
+  class ScriptApiContext;
+
   class ScriptRuntime {
   public:
     using SubscriberId = std::uint64_t;
 
     explicit ScriptRuntime(
-        std::string runtimeName, ScriptWidgetSettings settings, ClipboardService* clipboard = nullptr
+        std::string runtimeName, ScriptWidgetSettings settings, ScriptApiContext& api,
+        ClipboardService* clipboard = nullptr
     );
     ~ScriptRuntime();
 
@@ -53,8 +56,10 @@ namespace scripting {
 
   class SharedScriptRuntimeRegistry {
   public:
-    static SharedScriptRuntimeAcquireResult
-    acquire(const std::string& key, ScriptWidgetSettings settings, ClipboardService* clipboard = nullptr);
+    static SharedScriptRuntimeAcquireResult acquire(
+        const std::string& key, ScriptWidgetSettings settings, ScriptApiContext& api,
+        ClipboardService* clipboard = nullptr
+    );
   };
 
 } // namespace scripting

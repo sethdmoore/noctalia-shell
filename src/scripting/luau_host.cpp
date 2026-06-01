@@ -7,10 +7,10 @@
 #include "luacode.h"
 #include "lualib.h"
 #include "notification/notifications.h"
+#include "scripting/script_api_context.h"
 #include "scripting/scripted_widget_bindings.h"
 #include "scripting/scripted_widget_manifest.h"
 #include "system/terminal_launch.h"
-#include "theme/theme_mode.h"
 
 #include <algorithm>
 #include <atomic>
@@ -256,7 +256,8 @@ namespace {
   }
 
   int luau_isDarkMode(lua_State* L) {
-    lua_pushboolean(L, noctalia::theme::isDarkMode() ? 1 : 0);
+    auto* host = hostForState(L);
+    lua_pushboolean(L, host != nullptr && host->api().isDarkMode() ? 1 : 0);
     return 1;
   }
 
@@ -370,7 +371,7 @@ namespace {
   }
 } // namespace
 
-LuauHost::LuauHost(CompositorPlatform* platform) : m_platform(platform) {
+LuauHost::LuauHost(scripting::ScriptApiContext& api, CompositorPlatform* platform) : m_api(api), m_platform(platform) {
   m_hostId = nextHostId()++;
 
   m_L = luaL_newstate();
