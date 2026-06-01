@@ -50,6 +50,18 @@ namespace app_identity {
         }
       }
 
+      DesktopEntryLookupOptions extendedLookup;
+      if (runningAppId.starts_with("steam_app_")) {
+        extendedLookup.includeHidden = true;
+        extendedLookup.includeNoDisplay = true;
+      }
+      if (const auto matched = findDesktopEntry(runningAppId, allEntries, extendedLookup)) {
+        return DesktopEntryResolution{
+            .entry = *matched,
+            .matchedDesktopEntry = true,
+        };
+      }
+
       DesktopEntry fallback;
       fallback.id = std::string(runningAppId);
       fallback.name = std::string(runningAppId);

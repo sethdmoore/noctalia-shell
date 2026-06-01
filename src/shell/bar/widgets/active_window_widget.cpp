@@ -3,6 +3,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
+#include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "system/internal_app_metadata.h"
 #include "ui/builders.h"
@@ -199,6 +200,18 @@ std::string ActiveWindowWidget::resolveIconPath(const std::string& appId) {
 
   if (const auto internal = internal_apps::metadataForAppId(appId); internal.has_value()) {
     return internal->iconPath;
+  }
+
+  const app_identity::DesktopEntryLookupOptions lookupOptions = appId.starts_with("steam_app_")
+      ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
+      : app_identity::DesktopEntryLookupOptions{};
+  if (const auto entry = app_identity::findDesktopEntry(appId, desktopEntries(), lookupOptions);
+      entry.has_value() && !entry->icon.empty()) {
+    const int iconTargetSize = static_cast<int>(std::round(48.0f * m_contentScale));
+    const std::string& resolved = m_iconResolver.resolve(entry->icon, iconTargetSize);
+    if (!resolved.empty()) {
+      return resolved;
+    }
   }
 
   const int iconTargetSize = static_cast<int>(std::round(48.0f * m_contentScale));
