@@ -606,9 +606,10 @@ namespace {
     layoutWidgets(instance.centerWidgets);
     layoutWidgets(instance.endWidgets);
 
-    // Capsules sit a small fixed margin in from the bar edges; keyed on the bar's scale (not any
-    // per-widget scale) so every capsule keeps the same cross-size.
-    const float capsuleCrossInset = std::round(Style::spaceXs * instance.barConfig.scale);
+    // Capsules sit a small margin in from the bar edges; keyed on the bar's scale (not any per-widget
+    // scale) so every capsule keeps the same cross-size. The margin is capped to a fraction of the bar
+    // thickness so a thin bar can't collapse the capsule below its content and clip it.
+    const float capsuleCrossInset = std::round(std::min(Style::spaceXs * instance.barConfig.scale, slotCross * 0.12f));
     auto finalizeCapsules = [isVertical, slotCross, capsuleCrossInset, &renderer](std::vector<BarCapsuleRun>& runs) {
       for (auto& run : runs) {
         Node* shell = run.shell;
