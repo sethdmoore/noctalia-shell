@@ -229,12 +229,17 @@ void TrayMenu::onTrayChanged() {
   resizeMainSurfaceToEntries();
   rebuildScenes();
 
-  if (m_pendingSubmenuParentEntryId != 0 && m_submenuInstance == nullptr) {
-    const auto parentId = m_pendingSubmenuParentEntryId;
-    const auto rowCenterY = m_pendingSubmenuRowCenterY;
-    m_pendingSubmenuParentEntryId = 0;
-    m_pendingSubmenuRowCenterY = 0.0f;
-    openSubmenu(parentId, rowCenterY);
+  for (std::size_t levelIndex = 0; levelIndex < m_submenuLevels.size(); ++levelIndex) {
+    auto& level = m_submenuLevels[levelIndex];
+    if (level.pendingParentEntryId == 0 || level.instance != nullptr) {
+      continue;
+    }
+    const auto parentId = level.pendingParentEntryId;
+    const auto rowCenterY = level.pendingRowCenterY;
+    level.pendingParentEntryId = 0;
+    level.pendingRowCenterY = 0.0f;
+    openSubmenuAtLevel(levelIndex, parentId, rowCenterY);
+    break;
   }
 }
 
@@ -313,8 +318,10 @@ void TrayMenu::requestLayout() {
   if (m_instance != nullptr && m_instance->surface != nullptr) {
     m_instance->surface->requestLayout();
   }
-  if (m_submenuInstance != nullptr && m_submenuInstance->surface != nullptr) {
-    m_submenuInstance->surface->requestLayout();
+  for (auto& level : m_submenuLevels) {
+    if (level.instance != nullptr && level.instance->surface != nullptr) {
+      level.instance->surface->requestLayout();
+    }
   }
 }
 
@@ -323,9 +330,13 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
     return false;
   }
 
-  // Route to submenu first — it holds the active grab when open.
-  if (m_submenuInstance != nullptr) {
-    auto* sub = m_submenuInstance.get();
+  // Route to top-most submenu first — it holds the active grab when open.
+  for (std::size_t idx = m_submenuLevels.size(); idx > 0; --idx) {
+    auto& level = m_submenuLevels[idx - 1];
+    if (level.instance == nullptr) {
+      continue;
+    }
+    auto* sub = level.instance.get();
     const bool onSub = (event.surface != nullptr && event.surface == sub->wlSurface);
     bool subConsumed = false;
 
@@ -359,9 +370,6 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
             static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
         );
         subConsumed = true;
-        if (m_submenuInstance == nullptr) {
-          return subConsumed;
-        }
       }
       break;
     case PointerEvent::Type::Axis:
@@ -387,7 +395,7 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
     }
 
     if (subConsumed) {
-      return subConsumed;
+      return true;
     }
   }
 
@@ -465,8 +473,10 @@ void TrayMenu::onFontChanged() {
   if (m_instance != nullptr && m_instance->surface != nullptr) {
     m_instance->surface->requestLayout();
   }
-  if (m_submenuInstance != nullptr && m_submenuInstance->surface != nullptr) {
-    m_submenuInstance->surface->requestLayout();
+  for (auto& level : m_submenuLevels) {
+    if (level.instance != nullptr && level.instance->surface != nullptr) {
+      level.instance->surface->requestLayout();
+    }
   }
 }
 
@@ -558,10 +568,10 @@ void TrayMenu::scheduleEntryRetry(int attempt) {
   });
 }
 
-uint32_t TrayMenu::submenuHeightPx() const {
+uint32_t TrayMenu::submenuHeightPx(const std::vector<TrayMenuEntry>& submenuEntries) const {
   std::vector<ContextMenuControlEntry> entries;
-  entries.reserve(m_submenuEntries.size());
-  for (const auto& entry : m_submenuEntries) {
+  entries.reserve(submenuEntries.size());
+  for (const auto& entry : submenuEntries) {
     entries.push_back(
         ContextMenuControlEntry{
             .id = entry.id,
@@ -764,8 +774,10 @@ void TrayMenu::rebuildScenes() {
   if (!m_entries.empty() && m_instance != nullptr && m_instance->surface != nullptr) {
     m_instance->surface->requestLayout();
   }
-  if (!m_submenuEntries.empty() && m_submenuInstance != nullptr && m_submenuInstance->surface != nullptr) {
-    m_submenuInstance->surface->requestLayout();
+  for (auto& level : m_submenuLevels) {
+    if (!level.entries.empty() && level.instance != nullptr && level.instance->surface != nullptr) {
+      level.instance->surface->requestLayout();
+    }
   }
 }
 
@@ -861,7 +873,7 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
     });
   });
   menu->setOnSubmenuOpen([this](const ContextMenuControlEntry& entry, float rowCenterY) {
-    openSubmenu(entry.id, rowCenterY);
+    openSubmenuAtLevel(0, entry.id, rowCenterY);
   });
   scrollView->content()->addChild(std::move(menu));
   scrollView->layout(*m_renderContext);
@@ -955,75 +967,106 @@ bool TrayMenu::toggleActiveItemPinned() {
   return m_config->setOverride({"widget", "tray", "pinned"}, pinned);
 }
 
-void TrayMenu::closeSubmenu() {
-  if (m_submenuInstance != nullptr) {
-    m_submenuInstance->inputDispatcher.setSceneRoot(nullptr);
-    if (m_focusGrab != nullptr && m_submenuInstance->wlSurface != nullptr) {
-      m_focusGrab->removeSurface(m_submenuInstance->wlSurface);
-      m_focusGrab->commit();
-    }
-  }
-  // Notify the server before clearing state so the parent id is still valid.
-  if (m_tray != nullptr && !m_activeItemId.empty() && m_submenuParentEntryId != 0) {
-    m_tray->notifyMenuClosed(m_activeItemId, m_submenuParentEntryId);
-  }
-  m_submenuInstance.reset();
-  m_submenuEntries.clear();
-  m_submenuParentEntryId = 0;
-  m_pendingSubmenuParentEntryId = 0;
-  m_pendingSubmenuRowCenterY = 0.0f;
-}
+void TrayMenu::closeSubmenu() { closeSubmenusFrom(0); }
 
 void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
-  closeSubmenu();
+  openSubmenuAtLevel(0, parentEntryId, rowCenterY);
+}
 
-  if (m_instance == nullptr || m_instance->surface == nullptr || m_tray == nullptr) {
+void TrayMenu::closeSubmenusFrom(std::size_t levelIndex) {
+  if (levelIndex >= m_submenuLevels.size()) {
     return;
   }
 
-  m_submenuEntries = m_tray->menuEntriesForParent(m_activeItemId, parentEntryId);
-  if (m_submenuEntries.empty()) {
-    m_pendingSubmenuParentEntryId = parentEntryId;
-    m_pendingSubmenuRowCenterY = rowCenterY;
+  for (std::size_t idx = m_submenuLevels.size(); idx > levelIndex; --idx) {
+    auto& level = m_submenuLevels[idx - 1];
+    if (level.instance != nullptr) {
+      level.instance->inputDispatcher.setSceneRoot(nullptr);
+      if (m_focusGrab != nullptr && level.instance->wlSurface != nullptr) {
+        m_focusGrab->removeSurface(level.instance->wlSurface);
+        m_focusGrab->commit();
+      }
+    }
+    if (m_tray != nullptr && !m_activeItemId.empty() && level.parentEntryId != 0) {
+      m_tray->notifyMenuClosed(m_activeItemId, level.parentEntryId);
+    }
+    level.instance.reset();
+    level.entries.clear();
+    level.parentEntryId = 0;
+    level.pendingParentEntryId = 0;
+    level.pendingRowCenterY = 0.0f;
+  }
+}
+
+void TrayMenu::openSubmenuAtLevel(std::size_t levelIndex, std::int32_t parentEntryId, float rowCenterY) {
+  closeSubmenusFrom(levelIndex);
+
+  if (m_tray == nullptr) {
     return;
   }
-  m_pendingSubmenuParentEntryId = 0;
-  m_pendingSubmenuRowCenterY = 0.0f;
-  m_submenuParentEntryId = parentEntryId;
-  // Signal the server that this submenu is being opened. Matches the opened/closed
-  // pairing we do for the root menu.
+  MenuInstance* parentMenu = nullptr;
+  if (levelIndex == 0) {
+    if (m_instance == nullptr || m_instance->surface == nullptr) {
+      return;
+    }
+    parentMenu = m_instance.get();
+  } else {
+    if (levelIndex > m_submenuLevels.size()) {
+      return;
+    }
+    auto& parentLevel = m_submenuLevels[levelIndex - 1];
+    if (parentLevel.instance == nullptr || parentLevel.instance->surface == nullptr) {
+      return;
+    }
+    parentMenu = parentLevel.instance.get();
+  }
+
+  if (m_submenuLevels.size() <= levelIndex) {
+    m_submenuLevels.resize(levelIndex + 1);
+  }
+  auto& level = m_submenuLevels[levelIndex];
+
+  level.entries = m_tray->menuEntriesForParent(m_activeItemId, parentEntryId);
+  if (level.entries.empty()) {
+    level.pendingParentEntryId = parentEntryId;
+    level.pendingRowCenterY = rowCenterY;
+    return;
+  }
+  level.pendingParentEntryId = 0;
+  level.pendingRowCenterY = 0.0f;
+  level.parentEntryId = parentEntryId;
   m_tray->notifyMenuOpened(m_activeItemId, parentEntryId);
 
-  // Anchor rect is in the main popup's coordinate space (0,0 = top-left of main popup surface)
-  const auto mainContentX = static_cast<std::int32_t>(std::lround(m_instance->chrome.contentX()));
-  const auto mainWidth = static_cast<std::int32_t>(std::lround(m_instance->chrome.contentWidth));
-  const auto mainX = m_instance->surface->configuredX() + mainContentX;
+  const auto parentContentX = static_cast<std::int32_t>(std::lround(parentMenu->chrome.contentX()));
+  const auto parentWidth = static_cast<std::int32_t>(std::lround(parentMenu->chrome.contentWidth));
+  const auto parentX = parentMenu->surface->configuredX() + parentContentX;
   const auto rowTop = static_cast<std::int32_t>(rowCenterY - Style::controlHeightSm * 0.5f);
   const auto rowH = static_cast<std::int32_t>(Style::controlHeightSm);
   constexpr std::int32_t kSubGap = 4;
 
-  const auto chrome =
-      popup_chrome::computeGeometry(kSurfaceWidth, static_cast<float>(submenuHeightPx()), popupShadowConfig(m_config));
+  const auto chrome = popup_chrome::computeGeometry(
+      kSurfaceWidth, static_cast<float>(submenuHeightPx(level.entries)), popupShadowConfig(m_config)
+  );
 
-  const auto* wlOutput = m_wayland->findOutputByWl(m_instance->output);
+  const auto* wlOutput = m_wayland->findOutputByWl(parentMenu->output);
   const std::int32_t outputWidth = (wlOutput != nullptr && wlOutput->logicalWidth > 0)
       ? wlOutput->logicalWidth
       : static_cast<std::int32_t>(chrome.surfaceWidth);
 
-  bool isRight = (m_instance->submenuDirection == ContextSubmenuDirection::Right);
+  bool isRight = (parentMenu->submenuDirection == ContextSubmenuDirection::Right);
   const std::int32_t submenuExtent = static_cast<std::int32_t>(chrome.surfaceWidth) + kSubGap;
   if (isRight) {
-    if (mainX + mainWidth + submenuExtent > outputWidth) {
+    if (parentX + parentWidth + submenuExtent > outputWidth) {
       isRight = false;
     }
   } else {
-    if (mainX - submenuExtent < 0) {
+    if (parentX - submenuExtent < 0) {
       isRight = true;
     }
   }
 
-  const std::int32_t anchorX = isRight ? mainContentX + mainWidth : mainContentX;
-  const std::int32_t anchorY = static_cast<std::int32_t>(std::lround(m_instance->chrome.contentY())) + rowTop;
+  const std::int32_t anchorX = isRight ? parentContentX + parentWidth : parentContentX;
+  const std::int32_t anchorY = static_cast<std::int32_t>(std::lround(parentMenu->chrome.contentY())) + rowTop;
   const std::uint32_t anchor = isRight ? XDG_POSITIONER_ANCHOR_TOP_RIGHT : XDG_POSITIONER_ANCHOR_TOP_LEFT;
   const std::uint32_t gravity = isRight ? XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT : XDG_POSITIONER_GRAVITY_BOTTOM_LEFT;
   const std::int32_t offsetX = isRight ? kSubGap : -kSubGap;
@@ -1039,7 +1082,7 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
                                       };
 
   auto inst = std::make_unique<MenuInstance>();
-  inst->output = m_instance->output;
+  inst->output = parentMenu->output;
   inst->surface = std::make_unique<PopupSurface>(*m_wayland);
   inst->surface->setRenderContext(m_renderContext);
   inst->submenuDirection = subDir;
@@ -1047,10 +1090,10 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   auto* instPtr = inst.get();
 
   inst->surface->setConfigureCallback([instPtr](uint32_t /*w*/, uint32_t /*h*/) { instPtr->surface->requestLayout(); });
-  inst->surface->setPrepareFrameCallback([this, instPtr](bool needsUpdate, bool needsLayout) {
-    prepareSubmenuFrame(*instPtr, needsUpdate, needsLayout);
+  inst->surface->setPrepareFrameCallback([this, levelIndex, instPtr](bool needsUpdate, bool needsLayout) {
+    prepareSubmenuFrame(levelIndex, *instPtr, needsUpdate, needsLayout);
   });
-  inst->surface->setDismissedCallback([this]() { closeSubmenu(); });
+  inst->surface->setDismissedCallback([this, levelIndex]() { closeSubmenusFrom(levelIndex); });
 
   auto popupConfig = PopupSurfaceConfig{
       .anchorX = anchorX,
@@ -1069,25 +1112,25 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   };
   popup_chrome::applyToConfig(popupConfig, chrome, chromeAttachment);
 
-  xdg_surface* parentXdg = m_instance->surface->xdgSurface();
-  if (!inst->surface->initializeAsChild(parentXdg, m_instance->output, popupConfig)) {
+  xdg_surface* parentXdg = parentMenu->surface->xdgSurface();
+  if (!inst->surface->initializeAsChild(parentXdg, parentMenu->output, popupConfig)) {
     kLog.debug("tray submenu: failed to create child popup surface");
-    m_submenuEntries.clear();
-    m_submenuParentEntryId = 0;
+    level.entries.clear();
+    level.parentEntryId = 0;
     return;
   }
 
   popup_chrome::setContentInputRegion(*inst->surface, inst->chrome);
   inst->wlSurface = inst->surface->wlSurface();
-  m_submenuInstance = std::move(inst);
+  level.instance = std::move(inst);
 
-  if (m_focusGrab != nullptr && m_submenuInstance->wlSurface != nullptr) {
-    m_focusGrab->addSurface(m_submenuInstance->wlSurface);
+  if (m_focusGrab != nullptr && level.instance->wlSurface != nullptr) {
+    m_focusGrab->addSurface(level.instance->wlSurface);
     m_focusGrab->commit();
   }
 }
 
-void TrayMenu::prepareSubmenuFrame(MenuInstance& inst, bool /*needsUpdate*/, bool needsLayout) {
+void TrayMenu::prepareSubmenuFrame(std::size_t levelIndex, MenuInstance& inst, bool /*needsUpdate*/, bool needsLayout) {
   if (m_renderContext == nullptr || inst.surface == nullptr) {
     return;
   }
@@ -1105,11 +1148,11 @@ void TrayMenu::prepareSubmenuFrame(MenuInstance& inst, bool /*needsUpdate*/, boo
       || static_cast<uint32_t>(std::round(inst.sceneRoot->height())) != height;
   if (needsSceneBuild || needsLayout) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
-    buildSubmenuScene(inst, width, height);
+    buildSubmenuScene(levelIndex, inst, width, height);
   }
 }
 
-void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t height) {
+void TrayMenu::buildSubmenuScene(std::size_t levelIndex, MenuInstance& inst, uint32_t width, uint32_t height) {
   uiAssertNotRendering("TrayMenu::buildSubmenuScene");
   const auto w = static_cast<float>(width);
   const auto h = static_cast<float>(height);
@@ -1118,9 +1161,13 @@ void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t he
   inst.sceneRoot->setSize(w, h);
   (void)popup_chrome::addShadow(*inst.sceneRoot, inst.chrome, popupShadowConfig(m_config), Style::scaledRadiusLg());
 
+  if (levelIndex >= m_submenuLevels.size()) {
+    return;
+  }
   std::vector<ContextMenuControlEntry> entries;
-  entries.reserve(m_submenuEntries.size());
-  for (const auto& entry : m_submenuEntries) {
+  const auto& submenuEntries = m_submenuLevels[levelIndex].entries;
+  entries.reserve(submenuEntries.size());
+  for (const auto& entry : submenuEntries) {
     entries.push_back(
         ContextMenuControlEntry{
             .id = entry.id,
@@ -1169,6 +1216,9 @@ void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t he
       close();
       closeTrayDrawerPanelIfOpen();
     });
+  });
+  menu->setOnSubmenuOpen([this, levelIndex](const ContextMenuControlEntry& entry, float rowCenterY) {
+    openSubmenuAtLevel(levelIndex + 1, entry.id, rowCenterY);
   });
   scrollView->content()->addChild(std::move(menu));
   scrollView->layout(*m_renderContext);
