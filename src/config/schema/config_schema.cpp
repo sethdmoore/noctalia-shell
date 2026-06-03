@@ -879,7 +879,7 @@ namespace noctalia::config::schema {
       return s;
     }
 
-    // NOTE: legacy configToToml never emitted [shell.screenshot] (read-only gap);
+    // NOTE: the serializer previously never emitted [shell.screenshot] (read-only gap);
     // including it here fixes the export, mirroring the calendar gap-fix.
     const Schema<ShellConfig::ScreenshotConfig>& shellScreenshotSchema() {
       static const Schema<ShellConfig::ScreenshotConfig> s = {
@@ -1099,6 +1099,130 @@ namespace noctalia::config::schema {
         ),
     };
     return s;
+  }
+
+  namespace {
+    // Run collectUnknownKeys for `section`'s schema; false if the section name is
+    // unknown. The single dispatch from a section name to its schema.
+    bool collectUnknownInSection(std::string_view section, const toml::table& tbl, std::vector<std::string>& unknown) {
+      const auto chk = [&](const auto& sch) {
+        collectUnknownKeys(tbl, sch, section, unknown);
+        return true;
+      };
+      if (section == "shell") {
+        return chk(shellSchema());
+      }
+      if (section == "wallpaper") {
+        return chk(wallpaperSchema());
+      }
+      if (section == "theme") {
+        return chk(themeSchema());
+      }
+      if (section == "backdrop") {
+        return chk(backdropSchema());
+      }
+      if (section == "lockscreen") {
+        return chk(lockscreenSchema());
+      }
+      if (section == "notification" || section == "notifications") {
+        return chk(notificationSchema());
+      }
+      if (section == "osd") {
+        return chk(osdSchema());
+      }
+      if (section == "system") {
+        return chk(systemSchema());
+      }
+      if (section == "weather") {
+        return chk(weatherSchema());
+      }
+      if (section == "calendar") {
+        return chk(calendarSchema());
+      }
+      if (section == "audio") {
+        return chk(audioSchema());
+      }
+      if (section == "brightness") {
+        return chk(brightnessSchema());
+      }
+      if (section == "battery") {
+        return chk(batterySchema());
+      }
+      if (section == "nightlight") {
+        return chk(nightlightSchema());
+      }
+      if (section == "location") {
+        return chk(locationSchema());
+      }
+      if (section == "idle") {
+        return chk(idleSchema());
+      }
+      if (section == "keybinds") {
+        return chk(keybindsSchema());
+      }
+      if (section == "dock") {
+        return chk(dockSchema());
+      }
+      if (section == "control_center") {
+        return chk(controlCenterSchema());
+      }
+      if (section == "hooks") {
+        return chk(hooksSchema());
+      }
+      return false;
+    }
+
+    // Nested table mirroring path[from..] with a dummy leaf, so collectUnknownKeys
+    // can report whether the deepest key is recognized.
+    toml::table nestedFromPath(const std::vector<std::string>& path, std::size_t from) {
+      toml::table root;
+      toml::table* cur = &root;
+      for (std::size_t i = from; i + 1 < path.size(); ++i) {
+        cur->insert_or_assign(path[i], toml::table{});
+        cur = cur->get(path[i])->as_table();
+      }
+      cur->insert_or_assign(path.back(), 0); // dummy leaf
+      return root;
+    }
+  } // namespace
+
+  bool isKnownConfigPath(const std::vector<std::string>& path) {
+    if (path.empty()) {
+      return false;
+    }
+    const std::string& section = path[0];
+
+    // Bar lives at the config root (named bars + monitor overrides), not a section
+    // schema. {"bar"} / {"bar",name} / {"bar",name,"monitor"[,match]} are container
+    // levels; deeper keys validate against the bar field schemas.
+    if (section == "bar") {
+      if (path.size() <= 2) {
+        return true;
+      }
+      if (path[2] == "monitor") {
+        if (path.size() <= 4) {
+          return true;
+        }
+        std::vector<std::string> unknown;
+        collectUnknownKeys(nestedFromPath(path, 4), barMonitorOverrideSchema(), "bar", unknown);
+        return unknown.empty();
+      }
+      if (path.size() == 3 && (path[2] == "position" || path[2] == "name")) {
+        return true; // emitted/keyed outside barFieldsSchema
+      }
+      std::vector<std::string> unknown;
+      collectUnknownKeys(nestedFromPath(path, 2), barFieldsSchema(), "bar", unknown);
+      return unknown.empty();
+    }
+
+    if (path.size() < 2) {
+      return false; // a bare section is not a setting path
+    }
+    std::vector<std::string> unknown;
+    if (!collectUnknownInSection(section, nestedFromPath(path, 1), unknown)) {
+      return false; // unknown section
+    }
+    return unknown.empty();
   }
 
   namespace {

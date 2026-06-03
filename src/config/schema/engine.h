@@ -12,7 +12,7 @@
 namespace noctalia::config::schema {
 
   // Populate `out` from `tbl` by running every field's reader. Absent keys leave
-  // the struct default. Replaces a hand-written parseTableInto section.
+  // the struct default. Replaces a hand-written parseConfigTable section.
   template <typename Struct>
   void readInto(
       const toml::table& tbl, Struct& out, const Schema<Struct>& schema, std::string_view parentPath, Diagnostics& diag
@@ -23,7 +23,7 @@ namespace noctalia::config::schema {
   }
 
   // Serialize `in` into a fresh table by running every field's writer, in schema
-  // order. Replaces a hand-written configToToml section.
+  // order. Replaces a hand-written config_export::serialize section.
   template <typename Struct> toml::table writeTable(const Struct& in, const Schema<Struct>& schema) {
     toml::table tbl;
     for (const auto& f : schema) {

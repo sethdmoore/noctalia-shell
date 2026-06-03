@@ -90,7 +90,7 @@ namespace noctalia::config {
       schema::collectUnknownKeys(*tbl, sch, name, unknown);
       for (const auto& path : unknown) {
         if (!allowUnknownPaths.contains(path)) {
-          diag.error(path, "unknown setting");
+          diag.warn(path, "unknown setting");
         }
       }
       T tmp{};
@@ -201,7 +201,7 @@ namespace noctalia::config {
         const auto field = std::find_if(fields.begin(), fields.end(), [&](const auto& f) { return f.key == keyStr; });
         if (field == fields.end()) {
           if (flagUnknown) {
-            diag.error(base + "." + keyStr, "unknown setting");
+            diag.warn(base + "." + keyStr, "unknown setting");
           }
           continue;
         }
@@ -249,7 +249,7 @@ namespace noctalia::config {
       for (const auto& [key, node] : *dw) {
         (void)node;
         if (!kTopLevel.contains(std::string(key.str()))) {
-          diag.error("desktop_widgets." + std::string(key.str()), "unknown setting");
+          diag.warn("desktop_widgets." + std::string(key.str()), "unknown setting");
         }
       }
       if (const auto* grid = (*dw)["grid"].as_table()) {
@@ -257,7 +257,7 @@ namespace noctalia::config {
         for (const auto& [key, node] : *grid) {
           (void)node;
           if (!kGrid.contains(std::string(key.str()))) {
-            diag.error("desktop_widgets.grid." + std::string(key.str()), "unknown setting");
+            diag.warn("desktop_widgets.grid." + std::string(key.str()), "unknown setting");
           }
         }
       }
@@ -277,7 +277,7 @@ namespace noctalia::config {
         for (const auto& [key, value] : *tbl) {
           (void)value;
           if (!kWidgetKeys.contains(std::string(key.str()))) {
-            diag.error(base + "." + std::string(key.str()), "unknown setting");
+            diag.warn(base + "." + std::string(key.str()), "unknown setting");
           }
         }
         const std::string type = (*tbl)["type"].value<std::string>().value_or("");
@@ -319,7 +319,7 @@ namespace noctalia::config {
           if (path == base + ".position" || path == base + ".monitor") {
             continue;
           }
-          diag.error(path, "unknown setting");
+          diag.warn(path, "unknown setting");
         }
         BarConfig tmpBar{};
         try {
@@ -337,7 +337,7 @@ namespace noctalia::config {
             std::vector<std::string> monUnknown;
             schema::collectUnknownKeys(*monTbl, schema::barMonitorOverrideSchema(), monBase, monUnknown);
             for (const auto& path : monUnknown) {
-              diag.error(path, "unknown setting");
+              diag.warn(path, "unknown setting");
             }
             BarMonitorOverride tmpOvr{};
             try {
@@ -394,7 +394,7 @@ namespace noctalia::config {
     for (const auto& [key, node] : merged) {
       (void)node;
       if (!kKnownSections.contains(std::string(key.str()))) {
-        diag.error(std::string(key.str()), "unknown section");
+        diag.warn(std::string(key.str()), "unknown section");
       }
     }
 

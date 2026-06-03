@@ -587,7 +587,7 @@ std::string ConfigService::buildMergedUserConfig() const {
 }
 
 std::string ConfigService::buildEffectiveConfig() const {
-  return formatToml(config_export::configToToml(m_config)) + "\n";
+  return formatToml(config_export::serialize(m_config)) + "\n";
 }
 
 void ConfigService::checkReload() {
@@ -1087,7 +1087,7 @@ void ConfigService::loadAll() {
 
   std::string semanticError;
   try {
-    parseTableInto(merged, nextConfig, true);
+    parseConfigTable(merged, nextConfig, true);
   } catch (const std::exception& e) {
     semanticError = e.what();
     kLog.warn("config parse error: {}", semanticError);
@@ -1118,7 +1118,7 @@ void ConfigService::loadAll() {
   setConfigParseError(parseError);
 }
 
-void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool logSummary) const {
+void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, bool logSummary) const {
   // Diagnostics raised by schema-driven sections (e.g. unknown enum values).
   // Flushed to the log below, preserving the legacy warn-and-continue behavior.
   schema::Diagnostics schemaDiag;

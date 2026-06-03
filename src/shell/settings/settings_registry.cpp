@@ -1,6 +1,8 @@
 #include "shell/settings/settings_registry.h"
 
+#include "config/schema/config_schema.h"
 #include "config/schema/ranges.h"
+#include "core/log.h"
 #include "core/process.h"
 #include "i18n/i18n.h"
 #include "render/core/color.h"
@@ -2382,6 +2384,36 @@ namespace settings {
             tr("settings.schema.bar.end-widgets.description"), monitorPath("end"),
             ListSetting{.items = ovr.endWidgets.value_or(bar.endWidgets)}, "right"
         ));
+      }
+    }
+
+    // Integrity guard: every override path (and visibility-condition path) must
+    // resolve to a real schema key, else the entry silently reads/writes a dead
+    // override. Build-determined, so checked once per process; warn-only.
+    {
+      static bool verified = false;
+      if (!verified) {
+        verified = true;
+        const Logger log("settings");
+        const auto verify = [&](const std::vector<std::string>& path, std::string_view what) {
+          if (!path.empty() && !noctalia::config::schema::isKnownConfigPath(path)) {
+            std::string dotted;
+            for (const auto& seg : path) {
+              dotted += (dotted.empty() ? "" : ".") + seg;
+            }
+            log.warn("settings registry {} path does not resolve to a schema key: {}", what, dotted);
+          }
+        };
+        for (const auto& entry : entries) {
+          if (!std::holds_alternative<ButtonSetting>(entry.control)) {
+            verify(entry.path, "override");
+          }
+          if (entry.visibleWhen.has_value()) {
+            for (const auto& condition : entry.visibleWhen->all) {
+              verify(condition.path, "visibleWhen");
+            }
+          }
+        }
       }
     }
 

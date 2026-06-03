@@ -218,7 +218,7 @@ namespace config_export {
 
   } // namespace
 
-  toml::table configToToml(const Config& config) {
+  toml::table serialize(const Config& config) {
     toml::table root;
 
     root.insert_or_assign("shell", schema::writeTable(config.shell, schema::shellSchema()));

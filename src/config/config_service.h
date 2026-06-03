@@ -125,7 +125,7 @@ public:
 private:
   static void seedBuiltinWidgets(Config& config);
   void loadAll();
-  void parseTableInto(const toml::table& tbl, Config& config, bool logSummary) const;
+  void parseConfigTable(const toml::table& tbl, Config& config, bool logSummary) const;
   [[nodiscard]] std::optional<Config> configForOverrides(const toml::table& overrides) const;
   [[nodiscard]] bool overridePathEffectiveInTable(
       const std::vector<std::string>& path, const toml::table& overrides, const Config* parsedWith = nullptr

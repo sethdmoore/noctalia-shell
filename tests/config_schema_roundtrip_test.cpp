@@ -1,15 +1,14 @@
-// Golden equivalence harness for the declarative config schema (Phase 1).
+// Round-trip + golden tests for the declarative config schema.
 //
-// For every migrated section it asserts two things against the legacy code:
-//   1. write parity   — writeTable(section, schema) serializes byte-identically
-//                        to the section emitted by config_export::configToToml.
-//   2. read inverse    — readInto(configToToml(c)[section]) reconstructs the
-//                        original section value (schema read undoes schema write,
-//                        which equals the legacy serialization).
-// Plus targeted clamp goldens that pin parse-time range behavior.
-//
-// This is the safety net: a section may only have its hand-written
-// parseTableInto/configToToml branch deleted once it is covered and green here.
+// The schema is now the single source for both serialize (config_export::serialize →
+// writeTable) and parse (parseConfigTable → readInto), so there is no legacy code
+// to compare against. What still earns its keep:
+//   - read inverse — readInto(writeTable(x)) == x for every section: the schema's
+//                    read and write are mutual inverses (catches a field whose read
+//                    key != write key, or a lossy codec).
+//   - bar golden   — config_export::serialize(probe)["bar"] stays byte-identical to a captured
+//                    reference (locks the resolve-and-flatten monitor-override emit).
+//   - clamp goldens — pin parse-time range behavior.
 
 #include "config/config_export.h"
 #include "config/config_types.h"
@@ -29,7 +28,7 @@ namespace {
   int g_failures = 0;
 
   void fail(const std::string& message) {
-    std::fprintf(stderr, "config_schema_equivalence: FAIL: %s\n", message.c_str());
+    std::fprintf(stderr, "config_schema_roundtrip: FAIL: %s\n", message.c_str());
     ++g_failures;
   }
 
@@ -42,33 +41,21 @@ namespace {
     return out.str();
   }
 
-  template <typename T>
-  void
-  checkWriteParity(const std::string& section, const toml::table& legacyRoot, const T& value, const Schema<T>& schema) {
-    const auto* legacySection = legacyRoot[section].as_table();
-    if (legacySection == nullptr) {
-      fail(section + ": configToToml emitted no [" + section + "] table");
-      return;
-    }
-    const std::string legacy = formatToml(*legacySection);
-    const std::string fresh = formatToml(writeTable(value, schema));
-    if (legacy != fresh) {
-      fail(section + ": write mismatch\n--- legacy ---\n" + legacy + "\n--- schema ---\n" + fresh);
-    }
-  }
-
+  // readInto(writeTable(x)) must reconstruct x. `serialized` is config_export::serialize(probe),
+  // whose section emit IS writeTable(section), so this exercises the real schema
+  // round-trip via the actual serializer.
   template <typename T>
   void checkReadInverse(
-      const std::string& section, const toml::table& legacyRoot, const T& expected, const Schema<T>& schema
+      const std::string& section, const toml::table& serialized, const T& expected, const Schema<T>& schema
   ) {
-    const auto* legacySection = legacyRoot[section].as_table();
-    if (legacySection == nullptr) {
-      fail(section + ": configToToml emitted no [" + section + "] table");
+    const auto* sectionTbl = serialized[section].as_table();
+    if (sectionTbl == nullptr) {
+      fail(section + ": config_export::serialize emitted no [" + section + "] table");
       return;
     }
     T roundtrip{};
     Diagnostics diag;
-    readInto(*legacySection, roundtrip, schema, section, diag);
+    readInto(*sectionTbl, roundtrip, schema, section, diag);
     if (!(roundtrip == expected)) {
       fail(section + ": read inverse did not reconstruct the original value");
     }
@@ -362,7 +349,7 @@ namespace {
 } // namespace
 
 int main() {
-  // Captured from the pre-refactor configToToml for the fully-specified probe
+  // Captured from the pre-refactor config_export::serialize for the fully-specified probe
   // bar. Pins byte-identical bar serialization across the schema migration: the
   // resolve-and-flatten monitor write and the conditional/optional fields must
   // emit exactly these bytes.
@@ -463,12 +450,12 @@ widget_spacing = 8
     radius = 14.0)";
 
   const Config probe = makeProbe();
-  const toml::table legacyRoot = config_export::configToToml(probe);
+  const toml::table serialized = config_export::serialize(probe);
 
   // Bar: write parity against the captured golden, plus read-inverse via the
   // schemas (reconstructing the bar exactly as config_service does).
   {
-    const std::string fresh = formatToml(*legacyRoot["bar"].as_table());
+    const std::string fresh = formatToml(*serialized["bar"].as_table());
     if (fresh != kBarGolden) {
       fail(
           "bar: serialization drifted from golden\n--- golden ---\n"
@@ -479,7 +466,7 @@ widget_spacing = 8
     }
   }
   {
-    const auto* barTbl = legacyRoot["bar"]["default"].as_table();
+    const auto* barTbl = serialized["bar"]["default"].as_table();
     BarConfig rt;
     rt.name = "default";
     Diagnostics diag;
@@ -502,54 +489,33 @@ widget_spacing = 8
     }
   }
 
-  checkWriteParity("audio", legacyRoot, probe.audio, audioSchema());
-  checkWriteParity("weather", legacyRoot, probe.weather, weatherSchema());
-  checkWriteParity("osd", legacyRoot, probe.osd, osdSchema());
-  checkWriteParity("backdrop", legacyRoot, probe.backdrop, backdropSchema());
-  checkWriteParity("lockscreen", legacyRoot, probe.lockscreen, lockscreenSchema());
-  checkWriteParity("system", legacyRoot, probe.system, systemSchema());
-  checkWriteParity("nightlight", legacyRoot, probe.nightlight, nightlightSchema());
-  checkWriteParity("location", legacyRoot, probe.location, locationSchema());
-  checkWriteParity("notification", legacyRoot, probe.notification, notificationSchema());
-  checkWriteParity("dock", legacyRoot, probe.dock, dockSchema());
-  checkWriteParity("brightness", legacyRoot, probe.brightness, brightnessSchema());
-  checkWriteParity("battery", legacyRoot, probe.battery, batterySchema());
-  checkWriteParity("control_center", legacyRoot, probe.controlCenter, controlCenterSchema());
-  checkWriteParity("calendar", legacyRoot, probe.calendar, calendarSchema());
-  checkWriteParity("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
-  checkWriteParity("hooks", legacyRoot, probe.hooks, hooksSchema());
-  checkWriteParity("idle", legacyRoot, probe.idle, idleSchema());
-  checkWriteParity("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
-  checkWriteParity("theme", legacyRoot, probe.theme, themeSchema());
-  checkWriteParity("shell", legacyRoot, probe.shell, shellSchema());
-
-  checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
-  checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
-  checkReadInverse("osd", legacyRoot, probe.osd, osdSchema());
-  checkReadInverse("backdrop", legacyRoot, probe.backdrop, backdropSchema());
-  checkReadInverse("lockscreen", legacyRoot, probe.lockscreen, lockscreenSchema());
-  checkReadInverse("system", legacyRoot, probe.system, systemSchema());
-  checkReadInverse("nightlight", legacyRoot, probe.nightlight, nightlightSchema());
-  checkReadInverse("location", legacyRoot, probe.location, locationSchema());
-  checkReadInverse("notification", legacyRoot, probe.notification, notificationSchema());
-  checkReadInverse("dock", legacyRoot, probe.dock, dockSchema());
-  checkReadInverse("brightness", legacyRoot, probe.brightness, brightnessSchema());
-  checkReadInverse("battery", legacyRoot, probe.battery, batterySchema());
-  checkReadInverse("control_center", legacyRoot, probe.controlCenter, controlCenterSchema());
-  checkReadInverse("calendar", legacyRoot, probe.calendar, calendarSchema());
-  checkReadInverse("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
-  checkReadInverse("hooks", legacyRoot, probe.hooks, hooksSchema());
-  checkReadInverse("idle", legacyRoot, probe.idle, idleSchema());
-  checkReadInverse("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
-  checkReadInverse("theme", legacyRoot, probe.theme, themeSchema());
-  checkReadInverse("shell", legacyRoot, probe.shell, shellSchema());
+  checkReadInverse("audio", serialized, probe.audio, audioSchema());
+  checkReadInverse("weather", serialized, probe.weather, weatherSchema());
+  checkReadInverse("osd", serialized, probe.osd, osdSchema());
+  checkReadInverse("backdrop", serialized, probe.backdrop, backdropSchema());
+  checkReadInverse("lockscreen", serialized, probe.lockscreen, lockscreenSchema());
+  checkReadInverse("system", serialized, probe.system, systemSchema());
+  checkReadInverse("nightlight", serialized, probe.nightlight, nightlightSchema());
+  checkReadInverse("location", serialized, probe.location, locationSchema());
+  checkReadInverse("notification", serialized, probe.notification, notificationSchema());
+  checkReadInverse("dock", serialized, probe.dock, dockSchema());
+  checkReadInverse("brightness", serialized, probe.brightness, brightnessSchema());
+  checkReadInverse("battery", serialized, probe.battery, batterySchema());
+  checkReadInverse("control_center", serialized, probe.controlCenter, controlCenterSchema());
+  checkReadInverse("calendar", serialized, probe.calendar, calendarSchema());
+  checkReadInverse("keybinds", serialized, probe.keybinds, keybindsSchema());
+  checkReadInverse("hooks", serialized, probe.hooks, hooksSchema());
+  checkReadInverse("idle", serialized, probe.idle, idleSchema());
+  checkReadInverse("wallpaper", serialized, probe.wallpaper, wallpaperSchema());
+  checkReadInverse("theme", serialized, probe.theme, themeSchema());
+  checkReadInverse("shell", serialized, probe.shell, shellSchema());
 
   checkClamps();
 
   if (g_failures == 0) {
-    std::puts("config_schema_equivalence: all checks passed");
+    std::puts("config_schema_roundtrip: all checks passed");
     return 0;
   }
-  std::fprintf(stderr, "config_schema_equivalence: %d failure(s)\n", g_failures);
+  std::fprintf(stderr, "config_schema_roundtrip: %d failure(s)\n", g_failures);
   return 1;
 }

@@ -63,7 +63,7 @@ namespace noctalia::config::schema {
   };
 
   // Ordered set of fields for one struct. Insertion order is the serialization
-  // order — keep it identical to the legacy configToToml emission order.
+  // order — keep it identical to the config_export::serialize emission order.
   template <typename Struct> using Schema = std::vector<Field<Struct>>;
 
   // ── Leaf codec factories ─────────────────────────────────────────────────

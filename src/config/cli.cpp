@@ -6,12 +6,14 @@
 #include "util/string_utils.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 
 namespace noctalia::config {
   namespace {
@@ -282,6 +284,13 @@ namespace noctalia::config {
       return 0;
     }
 
+    // ANSI color only when the stream is a terminal and NO_COLOR is unset, so
+    // piped/redirected output stays clean.
+    bool useColor(std::FILE* stream) {
+      static const bool noColor = std::getenv("NO_COLOR") != nullptr;
+      return !noColor && isatty(fileno(stream)) != 0;
+    }
+
     int runValidate(int argc, char* argv[]) {
       std::string dirArg;
       for (int i = 3; i < argc; ++i) {
@@ -310,25 +319,33 @@ namespace noctalia::config {
 
       const auto diagnostics = validateConfigSources(configDir, settingsPath);
 
+      const bool colorErr = useColor(stderr);
+      const bool colorOut = useColor(stdout);
+
       std::size_t errors = 0;
       std::size_t warnings = 0;
       for (const auto& entry : diagnostics.entries) {
         const bool isError = entry.severity == schema::Diagnostics::Severity::Error;
         (isError ? errors : warnings)++;
-        std::fprintf(
-            isError ? stderr : stdout, "%s: %s: %s\n", isError ? "error" : "warning", entry.path.c_str(),
-            entry.message.c_str()
-        );
+        std::FILE* out = isError ? stderr : stdout;
+        const char* tag = isError ? "ERROR" : "WARN "; // padded to align the path column
+        const char* color = (isError ? colorErr : colorOut) ? (isError ? "\033[31m" : "\033[33m") : "";
+        const char* reset = *color != '\0' ? "\033[0m" : "";
+        std::fprintf(out, "%s%s%s %s: %s\n", color, tag, reset, entry.path.c_str(), entry.message.c_str());
       }
 
       if (errors > 0) {
-        std::fprintf(stderr, "\n✗ Config is invalid (%zu error(s), %zu warning(s))\n", errors, warnings);
+        const char* c = colorErr ? "\033[31m" : "";
+        const char* r = colorErr ? "\033[0m" : "";
+        std::fprintf(stderr, "\n%s✗ Config is invalid%s (%zu error(s), %zu warning(s))\n", c, r, errors, warnings);
         return 1;
       }
+      const char* c = colorOut ? "\033[32m" : "";
+      const char* r = colorOut ? "\033[0m" : "";
       if (warnings > 0) {
-        std::printf("\n✓ Config is valid (%zu warning(s))\n", warnings);
+        std::printf("\n%s✓ Config is valid%s (%zu warning(s))\n", c, r, warnings);
       } else {
-        std::puts("✓ Config is valid");
+        std::printf("%s✓ Config is valid%s\n", c, r);
       }
       return 0;
     }
