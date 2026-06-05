@@ -11,13 +11,13 @@ namespace desktop_settings {
     using settings::WidgetSettingVisibility;
 
     const std::vector<DesktopWidgetTypeSpec> kDesktopWidgetTypeSpecs = {
-        {.type = "clock", .labelKey = "desktop-widgets.editor.types.clock"},
         {.type = "audio_visualizer", .labelKey = "desktop-widgets.editor.types.audio-visualizer"},
-        {.type = "sticker", .labelKey = "desktop-widgets.editor.types.sticker"},
-        {.type = "weather", .labelKey = "desktop-widgets.editor.types.weather"},
-        {.type = "media_player", .labelKey = "desktop-widgets.editor.types.media-player"},
-        {.type = "sysmon", .labelKey = "desktop-widgets.editor.types.system-monitor"},
+        {.type = "clock", .labelKey = "desktop-widgets.editor.types.clock"},
         {.type = "label", .labelKey = "desktop-widgets.editor.types.label"},
+        {.type = "media_player", .labelKey = "desktop-widgets.editor.types.media-player"},
+        {.type = "sticker", .labelKey = "desktop-widgets.editor.types.sticker"},
+        {.type = "sysmon", .labelKey = "desktop-widgets.editor.types.system-monitor"},
+        {.type = "weather", .labelKey = "desktop-widgets.editor.types.weather"},
     };
 
     WidgetSettingSpec baseSpec(std::string_view key, WidgetControlKind control, WidgetSettingValue defaultValue) {
