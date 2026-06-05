@@ -31,8 +31,10 @@ namespace shell::dock {
 
   [[nodiscard]] std::uint32_t positionToAnchor(DockEdge edge);
   [[nodiscard]] bool isVerticalEdge(DockEdge edge);
+  [[nodiscard]] bool dockHoverZoomSpreadsFromStart(const DockConfig& cfg);
   [[nodiscard]] std::int32_t dockContentSize(const DockConfig& cfg, std::size_t itemCount);
   [[nodiscard]] std::int32_t dockThickness(const DockConfig& cfg);
+  [[nodiscard]] std::int32_t dockHoverZoomCrossPad(const DockConfig& cfg);
   [[nodiscard]] std::size_t dockLauncherButtonCount(DockLauncherPosition position);
   [[nodiscard]] std::size_t dockLauncherButtonCount(const DockConfig& cfg);
   [[nodiscard]] DockSurfaceGeometry

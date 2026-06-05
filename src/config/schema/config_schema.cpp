@@ -156,7 +156,8 @@ namespace noctalia::config::schema {
         enumField(&DockConfig::position, "position", kDockEdges),
         field(&DockConfig::activeMonitorOnly, "active_monitor_only"),
         field(&DockConfig::iconSize, "icon_size", kDockIconSizeRange),
-        field(&DockConfig::padding, "padding", kDockPaddingRange),
+        field(&DockConfig::mainAxisPadding, "main_axis_padding", kDockPaddingRange),
+        field(&DockConfig::crossAxisPadding, "cross_axis_padding", kDockPaddingRange),
         field(&DockConfig::itemSpacing, "item_spacing", kDockItemSpacingRange),
         field(&DockConfig::backgroundOpacity, "background_opacity", kUnitRange),
         // `radius` seeds all four corners; per-corner keys below override it.
@@ -188,6 +189,8 @@ namespace noctalia::config::schema {
         field(&DockConfig::reserveSpace, "reserve_space"),
         field(&DockConfig::activeScale, "active_scale", kDockActiveScaleRange),
         field(&DockConfig::inactiveScale, "inactive_scale", kDockInactiveScaleRange),
+        field(&DockConfig::magnification, "magnification"),
+        field(&DockConfig::magnificationScale, "magnification_scale", kDockMagnificationScaleRange),
         field(&DockConfig::activeOpacity, "active_opacity", kUnitRange),
         field(&DockConfig::inactiveOpacity, "inactive_opacity", kUnitRange),
         field(&DockConfig::showDots, "show_dots"),

@@ -364,6 +364,7 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
     m_hoveredInstance->inputDispatcher.pointerEnter(
         static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial
     );
+    updateHoverZoomPointer(*m_hoveredInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
     // Auto-hide: show the dock when the pointer enters.
     if (m_config->config().dock.autoHide && m_hoveredInstance->sceneRoot != nullptr) {
       if (m_hoveredInstance->hideAnimId != 0) {
@@ -394,21 +395,9 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
   }
   case PointerEvent::Type::Leave: {
     if (m_hoveredInstance != nullptr) {
+      clearHoverZoomPointer(*m_hoveredInstance);
       m_hoveredInstance->pointerInside = false;
       m_hoveredInstance->inputDispatcher.pointerLeave();
-
-      // Clear item hover state.
-      for (auto& item : m_hoveredInstance->items) {
-        if (item.hovered) {
-          item.hovered = false;
-          if (item.background != nullptr) {
-            item.background->setFill(clearColorSpec());
-          }
-          if (m_hoveredInstance->sceneRoot) {
-            m_hoveredInstance->sceneRoot->markPaintDirty();
-          }
-        }
-      }
 
       if (m_config->config().dock.autoHide && m_popupOwnerInstance == nullptr) {
         shell::dock::startHideFadeOut(*m_hoveredInstance, *m_config);
@@ -421,6 +410,7 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
     if (m_hoveredInstance == nullptr)
       break;
     m_hoveredInstance->inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), 0);
+    updateHoverZoomPointer(*m_hoveredInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
     break;
   }
   case PointerEvent::Type::Button: {
@@ -429,6 +419,7 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
       shell::dock::DockInstance* targetInstance = it->second;
       if (m_hoveredInstance != targetInstance) {
         if (m_hoveredInstance != nullptr) {
+          clearHoverZoomPointer(*m_hoveredInstance);
           m_hoveredInstance->pointerInside = false;
           m_hoveredInstance->inputDispatcher.pointerLeave();
         }
@@ -442,6 +433,7 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
             static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial
         );
       }
+      updateHoverZoomPointer(*m_hoveredInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
     }
 
     if (m_hoveredInstance == nullptr)
@@ -569,6 +561,20 @@ void Dock::createInstance(const WaylandOutput& output) {
         needsUpdate, needsLayout
     );
   });
+  instance->surface->setFrameTickCallback([this, inst](float deltaMs) {
+    if (m_config == nullptr || m_renderContext == nullptr || !m_config->config().dock.magnification) {
+      return;
+    }
+    const shell::dock::DockItemSceneDependencies deps{
+        .model = {.config = *m_config},
+        .renderContext = *m_renderContext,
+        .iconResolver = m_iconResolver,
+    };
+    if (shell::dock::updateHoverZoom(*inst, deps, inst->snapshot, deltaMs) && inst->surface != nullptr) {
+      inst->surface->requestFrameTick();
+      inst->surface->requestRedraw();
+    }
+  });
   instance->surface->setAnimationManager(&instance->animations);
 
   if (!instance->surface->initialize(output.output)) {
@@ -664,6 +670,44 @@ void Dock::updateVisuals(shell::dock::DockInstance& instance) {
       },
       instance.snapshot
   );
+}
+
+void Dock::updateHoverZoomPointer(shell::dock::DockInstance& instance, float sceneX, float sceneY) {
+  assertDockInitialized(m_platform, m_config, m_renderContext);
+  if (!m_config->config().dock.magnification || instance.row == nullptr) {
+    return;
+  }
+
+  const shell::dock::DockItemSceneDependencies deps{
+      .model = {.config = *m_config},
+      .renderContext = *m_renderContext,
+      .iconResolver = m_iconResolver,
+  };
+
+  if (!shell::dock::syncHoverPointerFromScene(instance, m_config->config().dock, sceneX, sceneY)) {
+    shell::dock::clearHoverZoom(instance, deps, instance.snapshot);
+    return;
+  }
+
+  if (instance.surface == nullptr) {
+    return;
+  }
+  instance.surface->requestFrameTick();
+  instance.surface->requestRedraw();
+}
+
+void Dock::clearHoverZoomPointer(shell::dock::DockInstance& instance) {
+  if (m_config == nullptr || m_renderContext == nullptr || !m_config->config().dock.magnification) {
+    instance.hoverPointerValid = false;
+    return;
+  }
+
+  const shell::dock::DockItemSceneDependencies deps{
+      .model = {.config = *m_config},
+      .renderContext = *m_renderContext,
+      .iconResolver = m_iconResolver,
+  };
+  shell::dock::clearHoverZoom(instance, deps, instance.snapshot);
 }
 
 // ── Private: item context menu (right-click) ──────────────────────────────────

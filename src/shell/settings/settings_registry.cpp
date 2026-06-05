@@ -780,8 +780,14 @@ namespace settings {
         {"dock", "icon_size"}, sliderFor(cfg.dock.iconSize, noctalia::config::schema::kDockIconSizeRange, true), "apps"
     ));
     entries.push_back(makeEntry(
-        "dock", "layout", tr("settings.schema.shared.padding.label"), tr("settings.schema.dock.padding.description"),
-        {"dock", "padding"}, sliderFor(cfg.dock.padding, noctalia::config::schema::kDockPaddingRange, true), "inset"
+        "dock", "layout", tr("settings.schema.shared.main-axis-padding.label"),
+        tr("settings.schema.dock.main-axis-padding.description"), {"dock", "main_axis_padding"},
+        sliderFor(cfg.dock.mainAxisPadding, noctalia::config::schema::kDockPaddingRange, true), "inset"
+    ));
+    entries.push_back(makeEntry(
+        "dock", "layout", tr("settings.schema.shared.cross-axis-padding.label"),
+        tr("settings.schema.dock.cross-axis-padding.description"), {"dock", "cross_axis_padding"},
+        sliderFor(cfg.dock.crossAxisPadding, noctalia::config::schema::kDockPaddingRange, true), "inset"
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.dock.item-spacing.label"),
@@ -841,6 +847,17 @@ namespace settings {
         "dock", "focus-styling", tr("settings.schema.dock.inactive-icon-scale.label"),
         tr("settings.schema.dock.inactive-icon-scale.description"), {"dock", "inactive_scale"},
         sliderFor(cfg.dock.inactiveScale, noctalia::config::schema::kDockInactiveScaleRange, false), "unfocused", true
+    ));
+    entries.push_back(makeEntry(
+        "dock", "behavior", tr("settings.schema.dock.magnification.label"),
+        tr("settings.schema.dock.magnification.description"), {"dock", "magnification"},
+        ToggleSetting{cfg.dock.magnification}, "magnify zoom mac"
+    ));
+    entries.push_back(makeEntry(
+        "dock", "focus-styling", tr("settings.schema.dock.magnification-scale.label"),
+        tr("settings.schema.dock.magnification-scale.description"), {"dock", "magnification_scale"},
+        sliderFor(cfg.dock.magnificationScale, noctalia::config::schema::kDockMagnificationScaleRange, false),
+        "magnify zoom"
     ));
     entries.push_back(makeEntry(
         "dock", "focus-styling", tr("settings.schema.dock.active-icon-opacity.label"),

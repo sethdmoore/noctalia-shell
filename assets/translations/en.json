@@ -598,7 +598,8 @@
     "actions": {
       "close": "Close",
       "close-all": "Close All"
-    }
+    },
+    "launcher": "Launcher"
   },
   "osd": {
     "lock-keys": {
@@ -1638,6 +1639,12 @@
         "padding": {
           "label": "Padding"
         },
+        "main-axis-padding": {
+          "label": "Main Axis Padding"
+        },
+        "cross-axis-padding": {
+          "label": "Cross Axis Padding"
+        },
         "ends-margin": {
           "label": "Ends Margin"
         },
@@ -1965,6 +1972,14 @@
           "label": "Inactive Icon Scale",
           "description": "Scale of unfocused dock icons"
         },
+        "magnification": {
+          "label": "Magnification",
+          "description": "Magnify dock icons near the pointer, macOS-style"
+        },
+        "magnification-scale": {
+          "label": "Magnification Scale",
+          "description": "Maximum icon scale multiplier at the pointer center (1.0 disables magnification)"
+        },
         "active-icon-opacity": {
           "label": "Active Icon Opacity",
           "description": "Opacity of the focused dock icon"
@@ -1983,8 +1998,11 @@
         "position": {
           "description": "Which screen edge the dock sits on"
         },
-        "padding": {
-          "description": "Inner padding of the dock"
+        "main-axis-padding": {
+          "description": "Inner padding along the dock's main axis (between icons and the short ends of the capsule)"
+        },
+        "cross-axis-padding": {
+          "description": "Inner padding along the dock's cross axis (between icons and the screen edge)"
         },
         "ends-margin": {
           "description": "Inset from each end of the dock along its main axis"
