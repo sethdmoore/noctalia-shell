@@ -1,7 +1,13 @@
 Noctalia
 ===
 
-A lightweight Wayland shell and bar built directly on Wayland + OpenGL ES, with no Qt or GTK dependency.
+Noctalia is a native Wayland desktop shell for people who want a polished, configurable Linux desktop without stitching
+together a separate bar, launcher, notification daemon, lock screen, wallpaper tool, and settings UI.
+
+It provides the shell layer around your compositor: bars, widgets, dock, launcher, control center, notifications,
+wallpaper, lock screen, session actions, clipboard history, OSDs, tray integration, and desktop widgets. The project is
+built directly on Wayland and OpenGL ES with no Qt or GTK dependency, so the UI, rendering, configuration, and IPC model
+are designed as one cohesive shell instead of a collection of unrelated panels and scripts.
 
 > [!IMPORTANT]
 > Noctalia v5 is in early/alpha development. Expect breaking configuration and behavior changes while the project is still taking shape.
@@ -39,6 +45,27 @@ A lightweight Wayland shell and bar built directly on Wayland + OpenGL ES, with 
   </a>
 </p>
 
+
+## Why Noctalia?
+
+Most Wayland setups leave the desktop shell to a stack of small tools: one bar, another launcher, another notification
+daemon, a lock screen, a wallpaper daemon, scripts for session actions, and separate config formats for each piece. That
+can be flexible, but it also makes a complete desktop feel fragile and hard to keep visually consistent.
+
+Noctalia solves that by providing one configurable shell layer that owns the common desktop surfaces and services while
+still fitting into compositor-driven Wayland workflows. It is meant for users who want the control of a custom desktop
+environment with fewer moving parts and a consistent UI.
+
+## What It Includes
+
+- Multi-monitor bars with configurable widgets, taskbar, workspaces, system tray, media, network, battery, brightness,
+  weather, clipboard, and custom script-backed widgets.
+- Dock, launcher, control center, notification toasts/history, wallpaper picker, OSD overlays, lock screen, session
+  panel, and desktop widgets.
+- TOML configuration with hot reload, GUI-managed overrides, theme/palette support, template application, and IPC for
+  runtime control.
+- Direct Wayland integration for layer-shell, session lock, idle behavior, clipboard, foreign toplevels, workspaces,
+  fractional scaling, and compositor-specific workspace backends where needed.
 
 ## Dependencies
 
