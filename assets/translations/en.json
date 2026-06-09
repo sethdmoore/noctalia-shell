@@ -1514,13 +1514,13 @@
           "description": "Use a snapshot of the desktop as the lock screen background",
           "label": "Desktop Capture"
         },
-        "tint-intensity": {
-          "description": "Surface-color tint over the lock screen background",
-          "label": "Tint Intensity"
-        },
         "monitors": {
           "description": "Choose which monitors show the lock screen; leave empty to show on all monitors",
           "label": "Monitors"
+        },
+        "tint-intensity": {
+          "description": "Surface-color tint over the lock screen background",
+          "label": "Tint Intensity"
         },
         "wallpaper": {
           "description": "Custom image for the lock screen background. Leave empty to use the desktop wallpaper.",
@@ -2317,6 +2317,10 @@
           "description": "Command run when cycling keyboard layouts",
           "label": "Cycle Command"
         },
+        "detached-panel": {
+          "description": "Open the drawer as a floating panel with its own background instead of merging with the bar",
+          "label": "Detached Panel"
+        },
         "device": {
           "description": "Device to monitor or control",
           "label": "Device"
@@ -2337,10 +2341,6 @@
         "drawer-columns": {
           "description": "Number of tray icons per row in the drawer panel",
           "label": "Drawer Columns"
-        },
-        "detached-panel": {
-          "description": "Open the drawer as a floating panel with its own background instead of merging with the bar",
-          "label": "Detached Panel"
         },
         "empty-color": {
           "description": "Color role used for empty workspaces; fixed hex colors are also supported",

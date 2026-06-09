@@ -1,7 +1,8 @@
 {
   "auth": {
     "pam": {
-      "authentication-failed": "Échec de la connexion"
+      "authentication-failed": "Échec de la connexion",
+      "start-failed": "Échec du démarrage PAM"
     },
     "polkit": {
       "authenticate": "Connexion",
@@ -21,34 +22,62 @@
     "widgets": {
       "lock-keys": {
         "caps": "Maj",
-        "num": "Num"
+        "num": "Num",
+        "scroll": "Défilement"
       },
       "media": {
         "nothing-playing": "Aucune lecture en cours",
         "playing": "Lecture"
+      },
+      "scripted": {
+        "reload-failed": "Échec du rechargement du script",
+        "reloaded": "Script rechargé"
       },
       "weather": {
         "default": "Météo",
         "error": "Err météo",
         "loading": "Météo...",
         "no-location": "Pas de localisation",
+        "off": "Météo désactivée",
         "vertical-error": "ERR",
-        "vertical-loading": "..."
+        "vertical-loading": "...",
+        "vertical-no-location": "SANSLOC"
       }
     }
   },
   "clipboard": {
     "actions": {
+      "clear-all": "Tout effacer",
       "delete-item": "Supprimer l'élément",
       "keep-pinned": "Garder épinglé"
     },
-    "entry": {
-      "image": "Image"
+    "confirm": {
+      "clear-desc": "Choisir si les éléments épinglés doivent être conservés.",
+      "clear-desc-all-pinned": "Tous les éléments sont épinglés. Utiliser \"Tout effacer\" pour tous les supprimer.",
+      "clear-desc-no-pinned": "Tous les éléments de l'historique du presse-papiers seront supprimés.",
+      "clear-title": "Effacer l'historique du presse-papiers ?",
+      "delete-desc": "L'élément sélectionné sera supprimé de l'historique du presse-papiers.",
+      "delete-title": "Supprimer l'élément du presse-papiers ?"
     },
+    "empty": {
+      "history-message": "Aucun élément dans l'historique du presse-papiers.",
+      "history-title": "L'historique du presse-papiers est vide",
+      "no-matches-message": "Aucun élément ne correspond au filtre actuel.",
+      "no-matches-title": "Aucun élément correspondant"
+    },
+    "entry": {
+      "image": "Image",
+      "title": "Élément du presse-papiers"
+    },
+    "filter-placeholder": "Filtrer le presse-papiers...",
     "preview": {
+      "empty-text-payload": "(contenu texte vide)",
+      "image-title": "Entrée image du presse-papiers",
       "loading": "Chargement de l'aperçu",
+      "text-title": "Entrée texte du presse-papiers",
       "truncated": "... tronqué"
-    }
+    },
+    "title": "Prtesse-papiers"
   },
   "common": {
     "actions": {
@@ -63,37 +92,197 @@
     }
   },
   "control-center": {
+    "audio": {
+      "application-volumes": "Volumes des applications",
+      "input-volume": "Volume d'entrée",
+      "no-application-audio": "Aucun flux audio d’application",
+      "no-application-audio-body": "Aucun flux de lecture d’application disponible.",
+      "no-input-devices": "Aucun périphérique d’entrée",
+      "no-input-devices-body": "Aucune source d’enregistrement disponible.",
+      "no-input-selected": "Aucun périphérique d'entrée sélectionné",
+      "no-output-devices": "Aucun périphérique de sortie",
+      "no-output-devices-body": "Aucune sortie audio disponible.",
+      "no-output-selected": "Aucun périphérique de sortie sélectionné",
+      "output-volume": "Volume de sortie",
+      "unavailable-body": "PipeWire n’est pas actif.",
+      "unavailable-title": "Audio indisponible"
+    },
     "bluetooth": {
       "accept": "Accepter",
       "auto-reconnect": "Reconnexion auto",
       "bluetooth": "Bluetooth",
       "enter-code": "Entrer le code",
+      "no-devices": "Aucun appareil trouvé. Lancez une recherche pour détecter les appareils Bluetooth à proximité.",
       "off": "Bluetooth désactivé",
+      "pair-title": "Associer {device}",
       "pairing-detail": {
+        "authorize": "Accepter la demande d’association ?",
         "authorize-service": "Autoriser l'accès au service {uuid} ?",
-        "confirm": "Confirmer que ce code correspond à celui sur l'appareil :",
-        "display-passkey": "Entrer ce code sur l'appareil :",
-        "display-pin": "Entrer ce PIN sur l'appareil :",
-        "pin-code": "Entrer le code PIN affiché sur l'appareil :"
+        "confirm": "Confirmez que ce code correspond à celui sur l'appareil :",
+        "display-passkey": "Saisir ce code sur l'appareil :",
+        "display-pin": "Saisir ce PIN sur l'appareil :",
+        "passkey": "Saisir le code affiché sur l’appareil :",
+        "pin-code": "Saisir le code PIN affiché sur l'appareil :"
       },
       "reject": "Rejeter",
       "rfkill-blocked": "Le bluetooth est bloqué par le système. Activez-le pour débloquer.",
       "sections": {
         "available": "Disponible",
-        "connected": "Connecté"
+        "connected": "Connecté",
+        "paired": "Associé"
       },
       "unavailable": "Services bluetooth indisponibles",
-      "unknown-device": "Appareil inconnu"
+      "unknown-device": "Appareil inconnu",
+      "visible": "Détectable par les appareils à proximité"
     },
     "calendar": {
+      "all-day": "Toute la journée",
       "events": "Événements",
       "no-events": "Pas d'événement."
     },
     "display": {
-      "disabled": "Désactivé"
+      "disabled": "Désactivé",
+      "no-displays": "Aucun écran disponible",
+      "unknown-resolution": "Résolution inconnue"
+    },
+    "home": {
+      "media": {
+        "idle": "Inactif",
+        "no-active-player": "Aucun lecteur actif",
+        "nothing-playing": "Aucune lecture en cours",
+        "paused": "En pause",
+        "playback-unavailable": "Lecture indisponible",
+        "playing": "En lecture",
+        "unavailable": "Indisponible",
+        "unknown-artist": "Artiste inconnu",
+        "unknown-track": "Piste inconnue"
+      },
+      "select-avatar": "Sélectionner un avatar",
+      "unknown": "inconnu",
+      "weather": {
+        "configure-location": "Ajouter [weather].address ou activer la détection automatique de localisation.",
+        "data-unavailable": "Données météo indisponibles.",
+        "disabled": "La météo est désactivée dans la configuration.",
+        "fetching": "Récupération des prévisions..."
+      }
+    },
+    "media": {
+      "active-player": "Lecteur actif",
+      "nothing-playing": "Aucune lecture en cours",
+      "now-playing": "En cours de lecture",
+      "start-playback": "Démarrer la lecture dans une application MPRIS"
+    },
+    "network": {
+      "connect": "Se connecter",
+      "current-connection": "Connexion actuelle",
+      "no-networks": "Aucun réseau à proximité",
+      "not-connected": "Non connecté",
+      "password": "Mot de passe",
+      "password-prompt": "Saisir le mot de passe",
+      "password-prompt-for": "Saisir le mot de passe pour {ssid}",
+      "unavailable-detail": "Installer et activer NetworkManager pour gérer les réseaux depuis cette interface.",
+      "unavailable-title": "NetworkManager indisponible",
+      "vpns": "VPNs",
+      "wi-fi": "Wi-Fi",
+      "wifi": "Wi-Fi",
+      "wifi-off": "Wi-Fi désactivé",
+      "wifi-on": "Wi-Fi activé",
+      "wired-connection": "Connexion filaire"
+    },
+    "notifications": {
+      "empty-body": "Les notifications récentes s’afficheront ici.",
+      "empty-title": "Aucune notification",
+      "filter": {
+        "all": "Tout",
+        "older": "Anciennes",
+        "today": "Aujourd'hui",
+        "yesterday": "Hier"
+      },
+      "filter-empty-body": "Aucune notification ne correspond à ce filtre.",
+      "filter-empty-title": "Rien ici",
+      "untitled": "Notification sans titre"
+    },
+    "screen-time": {
+      "disabled": "Le suivi du temps d’écran est désactivé. Activez-le dans les paramètres pour enregistrer l’utilisation par application.",
+      "empty": "Aucune utilisation d’application enregistrée. Passez une fenêtre au premier plan pour commencer le suivi.",
+      "hour-0": "0 h",
+      "hour-12": "12 h",
+      "hour-18": "18 h",
+      "hour-6": "6 h",
+      "most-used": "Les plus utilisées",
+      "range": {
+        "14-days": "14 jours",
+        "3-days": "3 jours",
+        "today": "Aujourd'hui"
+      }
+    },
+    "shortcuts": {
+      "audio": "Audio",
+      "bluetooth": "Bluetooth",
+      "caffeine": "Caffeine",
+      "clipboard": "Presse-papiers",
+      "dark-mode": {
+        "auto": "Mode auto",
+        "dark": "Mode sombre",
+        "light": "Mode clair"
+      },
+      "keyboard-layout": "Disposition",
+      "media": "Média",
+      "mic-mute": "Microphone",
+      "nightlight": "Lumière nocturne",
+      "nightlight-states": {
+        "forced": "Toujours activé",
+        "off": "Lumière nocturne",
+        "scheduled-day": "Planifié",
+        "scheduled-night": "Actif"
+      },
+      "notification": "NPD",
+      "power-profile": "Alimentation",
+      "screen-recorder": "Enregistreur d’écran",
+      "screen-time": "Temps d'écran",
+      "session": "Session",
+      "system": "Système",
+      "wallpaper": "Fond d'écran",
+      "weather": "Météo",
+      "wifi": "Wi-Fi"
+    },
+    "system": {
+      "titles": {
+        "cpu": "CPU",
+        "gpu": "GPU",
+        "memory": "Mémoire",
+        "network": "Réseau",
+        "resources": "Ressources",
+        "system": "Système"
+      },
+      "unknown": "inconnu",
+      "uptime-prefix": "Actif depuis {uptime} · {osAge}"
+    },
+    "tabs": {
+      "audio": "Audio",
+      "bluetooth": "Bluetooth",
+      "calendar": "Calendrier",
+      "display": "Écran",
+      "home": "Accueil",
+      "media": "Média",
+      "network": "Réseau",
+      "notifications": "Notifications",
+      "screen-time": "Temps d'écran",
+      "system": "Système",
+      "weather": "Météo"
+    },
+    "weather": {
+      "configure-location": "Définir [weather].address ou activer la localisation automatique"
     }
   },
   "settings": {
+    "schema": {
+      "appearance": {
+        "app-icon-colorize": {
+          "label": "Coloriser les icônes d'application"
+        }
+      }
+    },
     "widgets": {
       "settings": {
         "type": {

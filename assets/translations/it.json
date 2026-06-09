@@ -6,7 +6,28 @@
       "user-unavailable": "Impossibile risolvere l'utente attuale"
     },
     "polkit": {
-      "authenticate": "Autentica"
+      "authenticate": "Autentica",
+      "authenticating": "Autenticazione...",
+      "default-message": "Autenticazione richiesta",
+      "invalid-password": "Password invalida",
+      "password-placeholder": "Password",
+      "title": "Autenticazione richiesta"
+    }
+  },
+  "bar": {
+    "screenshot": {
+      "choose-display": "Scegli display",
+      "fullscreen": "Schermo intero",
+      "region": "Seleziona l'area"
+    }
+  },
+  "settings": {
+    "schema": {
+      "appearance": {
+        "app-icon-colorize": {
+          "label": "Colora le icone delle app"
+        }
+      }
     }
   }
 }

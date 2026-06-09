@@ -7,7 +7,7 @@
     },
     "polkit": {
       "authenticate": "Authentifizieren",
-      "authenticating": "Authentifiziere...",
+      "authenticating": "Authentifiziere ...",
       "default-message": "Authentifizierung erforderlich",
       "invalid-password": "Ungültiges Passwort",
       "password-placeholder": "Passwort",
@@ -22,11 +22,11 @@
     },
     "widgets": {
       "lock-keys": {
-        "caps": "Caps",
-        "caps-short": "C",
-        "num": "Nr.",
+        "caps": "Umschalt",
+        "caps-short": "U",
+        "num": "Num",
         "num-short": "N",
-        "scroll": "Scrollen",
+        "scroll": "Scroll",
         "scroll-short": "S"
       },
       "media": {
@@ -43,7 +43,7 @@
       "weather": {
         "default": "Wetter",
         "error": "Wetterfehler",
-        "loading": "Wetter...",
+        "loading": "Wetter ...",
         "no-location": "Kein Standort",
         "off": "Wetter aus",
         "vertical-default": "W\nX",
@@ -61,7 +61,7 @@
       "keep-pinned": "Angeheftet lassen"
     },
     "confirm": {
-      "clear-desc": "Entscheide, ob angepinnte Elemente behalten werden sollen",
+      "clear-desc": "Entscheide, ob angepinnte Elemente behalten werden sollen.",
       "clear-desc-all-pinned": "Jeder Eintrag ist angepinnt. Nutze „Alles löschen“, um sie alle zu entfernen.",
       "clear-desc-no-pinned": "Das entfernt jeden Eintrag aus dem Verlauf der Zwischenablage.",
       "clear-title": "Zwischenablage-Verlauf löschen?",
@@ -69,8 +69,8 @@
       "delete-title": "Zwischenablage-Eintrag löschen?"
     },
     "empty": {
-      "history-message": "Keine Einträge in der Zwischenablage-Historie.",
-      "history-title": "Die Zwischenablage ist leer",
+      "history-message": "Keine Einträge im Zwischenablageveraluf.",
+      "history-title": "Die Zwischenablage-Historie ist leer",
       "no-matches-message": "Keine Einträge entsprechen dem aktuellen Filter.",
       "no-matches-title": "Keine passenden Einträge"
     },
@@ -78,11 +78,12 @@
       "image": "Bild",
       "title": "Zwischenablage-Eintrag"
     },
-    "filter-placeholder": "Zwischenablage filtern...",
+    "filter-placeholder": "Zwischenablage filtern ...",
     "preview": {
+      "empty-text-payload": "(leere Textnachricht)",
       "image-title": "Zwischenablage-Bildeintrag",
-      "loading": "Vorschau wird geladen...",
-      "text-title": "Texteintrag der Zwischenablage",
+      "loading": "Vorschau wird geladen ...",
+      "text-title": "Zwischenablage-Texteintrag",
       "truncated": "… abgeschnitten"
     },
     "title": "Zwischenablage"
@@ -103,13 +104,13 @@
     "audio": {
       "application-volumes": "Anwendungslautstärken",
       "input-volume": "Eingabelautstärke",
-      "no-application-audio": "Kein Anwendungsaudio",
+      "no-application-audio": "Kein Anwendungston",
       "no-application-audio-body": "Derzeit sind keine Wiedergabestreams von Anwendungen verfügbar.",
       "no-input-devices": "Keine Eingabegeräte",
       "no-input-devices-body": "Aktuell sind keine Aufnahmequellen verfügbar.",
       "no-input-selected": "Kein Eingabegerät ausgewählt",
       "no-output-devices": "Keine Ausgabegeräte",
-      "no-output-devices-body": "Keine Wiedergabesenken sind derzeit verfügbar.",
+      "no-output-devices-body": "Keine Wiedergabegeräte sind derzeit verfügbar.",
       "no-output-selected": "Kein Ausgabegerät ausgewählt",
       "output-volume": "Ausgabelautstärke",
       "unavailable-body": "PipeWire ist nicht aktiv.",
@@ -121,7 +122,7 @@
       "bluetooth": "Bluetooth",
       "enter-code": "Code eingeben",
       "no-devices": "Keine Geräte gefunden. Starte die Suche, um Bluetooth-Geräte in der Nähe zu entdecken.",
-      "off": "Bluetooth ist ausgeschalten",
+      "off": "Bluetooth ist aus",
       "pair-title": "Kopple {device}",
       "pairing-detail": {
         "authorize": "Die eingehende Kopplungsanfrage annehmen?",
@@ -150,7 +151,7 @@
     },
     "display": {
       "disabled": "Deaktiviert",
-      "no-displays": "Keine Monitore verfügbar",
+      "no-displays": "Keine Anzeigen verfügbar",
       "unknown-resolution": "Unbekannte Auflösung"
     },
     "home": {
@@ -171,8 +172,8 @@
       "weather": {
         "configure-location": "Füge [weather].address hinzu oder aktiviere auto_locate.",
         "data-unavailable": "Wetterdaten nicht verfügbar.",
-        "disabled": "Wetter ist in der Konfig deaktiviert.",
-        "fetching": "Vorhersage wird abgerufen..."
+        "disabled": "Wetter ist in der Konfiguration deaktiviert.",
+        "fetching": "Vorhersage wird abgerufen ..."
       }
     },
     "media": {
@@ -192,14 +193,14 @@
       "unavailable-detail": "Installiere und aktiviere NetworkManager, um Netzwerke von hier aus zu verwalten.",
       "unavailable-title": "NetworkManager nicht verfügbar",
       "vpns": "VPNs",
-      "wi-fi": "Drahtlos",
-      "wifi": "Wi-Fi",
-      "wifi-off": "Wi-Fi ist aus",
-      "wifi-on": "Wi-Fi ist an",
+      "wi-fi": "WLAN",
+      "wifi": "WLAN",
+      "wifi-off": "WLAN ist aus",
+      "wifi-on": "WLAN ist an",
       "wired-connection": "Kabelverbindung"
     },
     "notifications": {
-      "empty-body": "Aktuelle Benachrichtigungen werden hier angezeigt",
+      "empty-body": "Aktuelle Benachrichtigungen werden hier angezeigt.",
       "empty-title": "Keine Benachrichtigungen",
       "filter": {
         "all": "Alle",
@@ -207,17 +208,17 @@
         "today": "Heute",
         "yesterday": "Gestern"
       },
-      "filter-empty-body": "Keine Benachrichtigungen passen zu diesem Filter",
+      "filter-empty-body": "Keine Benachrichtigungen passen zu diesem Filter.",
       "filter-empty-title": "Nichts hier",
       "untitled": "Unbenannte Benachrichtigung"
     },
     "screen-time": {
       "disabled": "Bildschirmzeit-Tracking ist deaktiviert. Aktiviere es in den Einstellungen, um die Nutzung pro App zu erfassen.",
       "empty": "Noch keine App-Nutzung erfasst. Fokussiere ein Fenster, um die Erfassung zu starten.",
-      "hour-0": "0 Uhr",
+      "hour-0": "0:00 Uhr",
       "hour-12": "12:00 Uhr",
-      "hour-18": "18:00",
-      "hour-6": "6 Uhr",
+      "hour-18": "18:00 Uhr",
+      "hour-6": "6:00 Uhr",
       "most-used": "AM HÄUFIGSTEN VERWENDET",
       "range": {
         "14-days": "14 Tage",
@@ -271,7 +272,7 @@
       "audio": "Audio",
       "bluetooth": "Bluetooth",
       "calendar": "Kalender",
-      "display": "Monitor",
+      "display": "Anzeige",
       "home": "Startseite",
       "media": "Medien",
       "network": "Netzwerk",
@@ -293,14 +294,14 @@
         "wind": "Wind"
       },
       "disabled": "Aktiviere [Wetter] in config.toml",
-      "fetching": "Wettervorhersage wird geladen...",
+      "fetching": "Wettervorhersage wird geladen ...",
       "forecast-placeholder": {
         "day": "Sonntag",
         "description": "Wetter",
         "temperature": "10 / 4C"
       },
       "location-unavailable": "Standort nicht verfügbar",
-      "refreshing": "Aktualisiere Wetter...",
+      "refreshing": "Aktualisiere Wetter ...",
       "waiting": "Warten auf Wetterdaten"
     }
   },
@@ -310,7 +311,7 @@
         "done": "Fertig"
       },
       "dialogs": {
-        "select-sticker-image": "Aufkleber-Bild auswählen"
+        "select-sticker-image": "Sticker-Bild auswählen"
       },
       "settings": {
         "aspect-ratio": "Seitenverhältnis",
@@ -324,26 +325,26 @@
         "bar-width": "Leistenbreite",
         "bloom-intensity": "Bloom",
         "centered": "Zentriert",
-        "change-image": "Ändern…",
+        "change-image": "Ändern …",
         "circle": "Kreis",
         "clock-style": "Uhrstil",
         "clock-style-analog": "Analog",
         "clock-style-digital": "Digital",
         "color": "Farbe",
         "color2": "Farbe 2",
-        "custom-color": "Benutzerdefiniert…",
+        "custom-color": "Benutzerdefiniert …",
         "description": "Beschreibung",
         "fade-when-idle": "Ausblenden bei Inaktivität",
         "font-family": "Schriftart",
         "font-family-default": "Systemstandard",
         "format": "Format",
         "hide-when-no-media": "Ausblenden, wenn keine Medien",
-        "high-color": "Kräftige Farbe",
+        "high-color": "High Color",
         "horizontal": "Horizontal",
         "image-path": "Bild",
         "inner-diameter": "Innendurchmesser",
         "layout": "Layout",
-        "low-color": "Gedämpfte Farben",
+        "low-color": "Low Color",
         "mirrored": "Gespiegelt",
         "opacity": "Deckkraft",
         "primary-color": "Primärfarbe",
@@ -357,11 +358,11 @@
         "stat": "Statistik",
         "stat-cpu-temp": "CPU-Temperatur",
         "stat-cpu-usage": "CPU-Auslastung",
-        "stat-gpu-temp": "GPU Temperatur",
-        "stat-gpu-usage": "GPU Auslastung",
-        "stat-gpu-vram": "GPU VRAM",
-        "stat-net-rx": "Netzwerk Empfang",
-        "stat-net-tx": "Netz Senden",
+        "stat-gpu-temp": "GPU-Temperatur",
+        "stat-gpu-usage": "GPU-Auslastung",
+        "stat-gpu-vram": "GPU-VRAM",
+        "stat-net-rx": "Net Rx",
+        "stat-net-tx": "Net Tx",
         "stat-none": "Keine",
         "stat-ram-pct": "RAM %",
         "stat-swap-pct": "Swap %",
@@ -386,8 +387,8 @@
       "types": {
         "audio-visualizer": "Audio-Visualisierer",
         "clock": "Uhr",
-        "fancy-audio-visualizer": "Eleganter Audio-Visualizer",
-        "label": "Bezeichnung",
+        "fancy-audio-visualizer": "Eleganter Audio-Visualisierer",
+        "label": "Label",
         "media-player": "Medienplayer",
         "sticker": "Sticker",
         "system-monitor": "Systemüberwachung",
@@ -409,7 +410,7 @@
       "close": "Schließen",
       "close-all": "Alle schließen"
     },
-    "launcher": "Starter"
+    "launcher": "Launcher"
   },
   "internal-apps": {
     "settings": {
@@ -428,12 +429,12 @@
         "multimedia": "Multimedia",
         "office": "Büro",
         "system": "System",
-        "utilities": "Dienstprogramme"
+        "utilities": "Hilfsmittel"
       },
       "emoji": {
         "activity": "Aktivität",
         "animals": "Tiere",
-        "flags": "Flags",
+        "flags": "Flaggen",
         "food": "Essen",
         "nature": "Natur",
         "objects": "Objekte",
@@ -450,7 +451,7 @@
     },
     "empty": {
       "no-results": "Keine Ergebnisse gefunden",
-      "type-to-search": "Tippe zum Suchen..."
+      "type-to-search": "Tippe zum Suchen ..."
     },
     "providers": {
       "applications": {
@@ -474,7 +475,7 @@
         "title": "Windows"
       }
     },
-    "search-placeholder": "Anwendungen suchen..."
+    "search-placeholder": "Anwendungen suchen ..."
   },
   "location": {
     "errors": {
@@ -492,13 +493,13 @@
     }
   },
   "lockscreen": {
-    "authenticating": "Authentifiziere...",
+    "authenticating": "Authentifiziere ...",
     "authentication-failed": "Authentifizierung fehlgeschlagen",
     "password-cleared": "Passwort gelöscht",
     "password-placeholder": "Passwort",
     "ready": "Gib dein Passwort ein und drücke Enter.",
     "unlocked": "Entsperrt",
-    "waiting": "Warte auf Sperrbestätigung..."
+    "waiting": "Warte auf Sperrbestätigung ..."
   },
   "notifications": {
     "actions": {
@@ -507,7 +508,7 @@
     },
     "inline-reply": {
       "button": "Antworten",
-      "placeholder": "Eine Antwort eingeben..."
+      "placeholder": "Eine Antwort eingeben ..."
     },
     "internal": {
       "battery": "Batterie",
@@ -557,7 +558,7 @@
       "on": "DND An"
     },
     "lock-keys": {
-      "caps-off": "Caps Lock Aus",
+      "caps-off": "Feststelltaste Aus",
       "caps-on": "Feststelltaste Ein",
       "num-off": "Num Lock Aus",
       "num-on": "Num Lock An",
@@ -565,8 +566,8 @@
       "scroll-on": "Scroll Lock An"
     },
     "wifi": {
-      "off": "Wi-Fi Aus",
-      "on": "Wi-Fi An"
+      "off": "WLAN Aus",
+      "on": "WLAN An"
     }
   },
   "power": {
@@ -647,11 +648,11 @@
     "controls": {
       "keybind": {
         "add": "Klicke, um Tastenbelegung hinzuzufügen",
-        "recording-placeholder": "Drücke eine Tastenkombination…",
-        "unset-placeholder": "Klicke zum Binden…"
+        "recording-placeholder": "Drücke eine Tastenkombination …",
+        "unset-placeholder": "Klicke zum Binden …"
       },
       "list": {
-        "add-entry-placeholder": "Eintrag hinzufügen…"
+        "add-entry-placeholder": "Eintrag hinzufügen …"
       },
       "path-browse": {
         "file-title": "Datei auswählen",
@@ -753,7 +754,7 @@
           "empty": "Keine Widgets gefunden",
           "instance-description": "Benanntes Widget für den Typ „{type}“",
           "instance-toggle": "Benanntes Widget",
-          "placeholder": "Widgets suchen..."
+          "placeholder": "Widgets suchen ..."
         },
         "raw": {
           "delete": "Löschen",
@@ -1021,7 +1022,7 @@
         }
       },
       "theme-role": {
-        "custom": "Benutzerdefiniert…",
+        "custom": "Benutzerdefiniert …",
         "default": "Standard"
       },
       "wallpaper": {
@@ -1077,7 +1078,7 @@
         "community-palette": {
           "description": "Wähle eine Palette aus dem Community-Katalog",
           "label": "Gemeinschafts-Farbpalette",
-          "search-placeholder": "Paletten suchen..."
+          "search-placeholder": "Paletten suchen ..."
         },
         "corner-roundness": {
           "description": "Eckenradius über alle UI-Container und Bedienelemente der Shell hinweg skalieren",
@@ -1086,7 +1087,7 @@
         "custom-palette": {
           "description": "Wähle eine Palette aus ~/.config/noctalia/palettes/",
           "label": "Benutzerdefinierte Palette",
-          "search-placeholder": "Benutzerdefinierte Paletten suchen..."
+          "search-placeholder": "Benutzerdefinierte Paletten suchen ..."
         },
         "export-wallpaper-palette": {
           "button": "Als benutzerdefinierte Palette speichern",
@@ -1459,12 +1460,12 @@
             "label": "Beim Hintergrundbildwechsel"
           },
           "wifi-disabled": {
-            "description": "Befehl, der ausgeführt wird, wenn Wi-Fi deaktiviert ist",
-            "label": "Bei deaktiviertem Wi-Fi"
+            "description": "Befehl, der ausgeführt wird, wenn WLAN deaktiviert ist",
+            "label": "Bei deaktiviertem WLAN"
           },
           "wifi-enabled": {
-            "description": "Befehl, der ausgeführt wird, wenn Wi-Fi aktiviert ist",
-            "label": "Wi-Fi aktiviert"
+            "description": "Befehl, der ausgeführt wird, wenn WLAN aktiviert ist",
+            "label": "WLAN aktiviert"
           }
         }
       },
@@ -1512,6 +1513,10 @@
         "blurred-desktop": {
           "description": "Verwende einen Schnappschuss des Schreibtischs als Sperrbildschirm-Hintergrund",
           "label": "Bildschirmaufnahme"
+        },
+        "monitors": {
+          "description": "Wählen Sie die Monitore aus, auf denen der Sperrbildschirm angezeigt werden soll; leer lassen, um ihn auf allen Monitoren anzuzeigen.",
+          "label": "Monitore"
         },
         "tint-intensity": {
           "description": "Oberflächenfarbton über dem Hintergrund der Bildschirmsperre",
@@ -1949,7 +1954,7 @@
           "label": "Tastaturlayout"
         },
         "osd-kinds-lock-keys": {
-          "description": "OSD-Popups bei Änderungen von Caps Lock, Num Lock und Scroll Lock anzeigen",
+          "description": "OSD-Popups bei Änderungen von Feststelltaste, Num Lock und Scroll Lock anzeigen",
           "label": "Sperrtasten"
         },
         "osd-kinds-power-profile": {
@@ -1969,8 +1974,8 @@
           "label": "Ausgabelautstärke"
         },
         "osd-kinds-wifi": {
-          "description": "Zeige ein OSD-Popup, wenn Wi-Fi umgeschaltet wird",
-          "label": "Wi-Fi"
+          "description": "Zeige ein OSD-Popup, wenn WLAN umgeschaltet wird",
+          "label": "WLAN"
         },
         "osd-monitors": {
           "description": "Wähle, welche Monitore OSD-Popups anzeigen; lass es leer, um sie auf allen Monitoren anzuzeigen",
@@ -2171,6 +2176,7 @@
       "clear-glyph": "Löschen",
       "command-label": "Shell-Befehl",
       "command-placeholder": "Optionaler Bash-Befehl, leer lassen für das Standardverhalten",
+      "command-required-placeholder": "Auszuführender Shell-Befehl",
       "glyph-label": "Glyphe",
       "glyph-picker-title": "Aktionsglyphe",
       "kind-section-label": "Verhalten",
@@ -2310,6 +2316,10 @@
         "cycle-command": {
           "description": "Befehl, der beim Wechseln der Tastaturlayouts ausgeführt wird",
           "label": "Zyklusbefehl"
+        },
+        "detached-panel": {
+          "description": "Öffne das Ausklappmenü als schwebendes Panel mit eigenem Hintergrund, anstatt es mit der Leiste zu verschmelzen.",
+          "label": "losgelöstes Panel"
         },
         "device": {
           "description": "Gerät zum Überwachen oder Steuern",
@@ -2538,8 +2548,8 @@
           "label": "Alle Monitore anzeigen"
         },
         "show-caps-lock": {
-          "description": "Caps Lock Zustand anzeigen",
-          "label": "Caps Lock anzeigen"
+          "description": "Feststelltaste Zustand anzeigen",
+          "label": "Feststelltaste anzeigen"
         },
         "show-condition": {
           "description": "Wetterzustandstext anzeigen",
@@ -2658,7 +2668,7 @@
       }
     },
     "window": {
-      "export-config": "Konfiguration exportieren…",
+      "export-config": "Konfiguration exportieren …",
       "export-config-saved": "Konfigurationsexport gespeichert.",
       "filter-modified": "Geändert",
       "native-title": "Noctalia Einstellungen",
@@ -2729,7 +2739,7 @@
   },
   "tray": {
     "menu": {
-      "empty": "Keine Menüpunkte...",
+      "empty": "Keine Menüpunkte ...",
       "pin": "Anheften",
       "unpin": "Lösen"
     }
@@ -2738,7 +2748,7 @@
     "controls": {
       "search-picker": {
         "empty": "Keine Ergebnisse",
-        "placeholder": "Suchen..."
+        "placeholder": "Suchen ..."
       },
       "select": {
         "placeholder": "Wähle eine Option"
@@ -2759,7 +2769,7 @@
           "folder": "Ordner"
         },
         "filename-placeholder": "Dateiname",
-        "filter-placeholder": "Filter...",
+        "filter-placeholder": "Filter ...",
         "sort": {
           "ascending": "Hoch",
           "date": "Datum",
@@ -2787,7 +2797,7 @@
       "color-title": "Hintergrundbildfarbe",
       "favorite-palette-label": "Farben",
       "favorite-theme-label": "Thema",
-      "filter-placeholder": "Filtern...",
+      "filter-placeholder": "Filtern ...",
       "flatten": "Abflachen",
       "no-directory-configured": "Kein Verzeichnis konfiguriert",
       "sort-date-asc": "Nach Datum sortieren (Älteste zuerst)",

@@ -17,7 +17,8 @@
   "bar": {
     "screenshot": {
       "choose-display": "Elige pantalla",
-      "fullscreen": "Pantalla completa"
+      "fullscreen": "Pantalla completa",
+      "region": "Seleccione region"
     },
     "widgets": {
       "lock-keys": {
@@ -25,7 +26,8 @@
         "caps-short": "M",
         "num": "Num",
         "num-short": "N",
-        "scroll": "Despl"
+        "scroll": "Despl",
+        "scroll-short": "D"
       },
       "media": {
         "nothing-playing": "No se está reproduciendo nada",
@@ -33,18 +35,39 @@
       },
       "network": {
         "wired": "Cableado"
+      },
+      "scripted": {
+        "reload-failed": "Recarga del script fallida",
+        "reloaded": "Script recargado"
+      },
+      "weather": {
+        "default": "Pronóstico",
+        "error": "Error de Pronóstico",
+        "loading": "Pronóstico...",
+        "no-location": "Sin ubicación",
+        "off": "Pronóstico apagado",
+        "vertical-error": "ERR",
+        "vertical-loading": "..."
       }
     }
   },
   "clipboard": {
     "actions": {
+      "clear-all": "Borrar todo",
       "delete-item": "Borrar elemento",
       "keep-pinned": "Mantener fijado"
     },
     "confirm": {
       "clear-desc": "Elegir si los elementos fijados deben retenerse.",
+      "clear-desc-all-pinned": "Todas las entradas estan fijadas. Use Borrar todo para eliminar todas.",
+      "clear-desc-no-pinned": "Esto elimina todas las entradas del portapapeles.",
       "clear-title": "Borrar historial del portapepeles?",
+      "delete-desc": "Esto elimina el elemento seleccionado en el historial del portapapeles.",
       "delete-title": "Eliminar elemento del portapapeles?"
+    },
+    "empty": {
+      "history-message": "No hay entradas en el historial del portapapeles.",
+      "history-title": "El historial del portapapeles está vacío"
     },
     "entry": {
       "image": "Imagen"
@@ -101,7 +124,108 @@
       "no-events": "No hay eventos."
     },
     "display": {
-      "disabled": "Desabilitado"
+      "disabled": "Desabilitado",
+      "no-displays": "No hay monitores disponibles"
+    },
+    "home": {
+      "weather": {
+        "disabled": "Pronóstico desabilitado en la configuracion."
+      }
+    },
+    "shortcuts": {
+      "session": "Sesión",
+      "system": "Sistema",
+      "wallpaper": "Fondo de Pantalla",
+      "weather": "Pronóstico"
+    },
+    "system": {
+      "titles": {
+        "gpu": "GPU",
+        "memory": "Memoria"
+      }
+    },
+    "tabs": {
+      "weather": "Pronóstico"
+    },
+    "weather": {
+      "details": {
+        "elevation": "Elevacion",
+        "sunrise": "Amanecer",
+        "sunset": "Atardecer",
+        "temp-max": "Temperatura Maxima",
+        "temp-min": "Temperatura Minima",
+        "timezone": "Zona Horaria",
+        "wind": "Viento"
+      },
+      "forecast-placeholder": {
+        "day": "Domingo",
+        "description": "Pronóstico",
+        "temperature": "10 / 4C"
+      },
+      "location-unavailable": "Ubicación no disponible",
+      "waiting": "Esperando por la información del pronóstico"
+    }
+  },
+  "desktop-widgets": {
+    "editor": {
+      "settings": {
+        "background": "Fondo",
+        "background-color": "Color",
+        "background-opacity": "Opacidad",
+        "background-padding": "Relleno",
+        "background-radius": "Radio",
+        "background-section": "Fondo",
+        "centered": "Centrado",
+        "change-image": "Cambiar...",
+        "circle": "Circulo",
+        "clock-style": "Estilo del reloj",
+        "clock-style-analog": "Análogo",
+        "clock-style-digital": "Digital",
+        "color": "Color",
+        "color2": "Color 2",
+        "custom-color": "Personalizado",
+        "description": "Descripción",
+        "font-family": "Fuente",
+        "format": "Formato",
+        "horizontal": "Horizontal",
+        "image-path": "Imagen",
+        "opacity": "Opacidad",
+        "primary-color": "Color Primario",
+        "rotation-speed": "Velocidad de rotación",
+        "secondary-color": "Color Secundario",
+        "sensitivity": "Sensibilidad",
+        "shadow": "Sombra",
+        "show-label": "Mostrar Etiqueta",
+        "show-when-idle": "Mostrar cuándo inactivo",
+        "stat": "Estadistica",
+        "stat-cpu-temp": "Temperatura CPU",
+        "stat-cpu-usage": "Utilización de CPU",
+        "stat-gpu-temp": "Temperatura GPU",
+        "stat-gpu-usage": "Utilización de GPU",
+        "stat-gpu-vram": "GPU VRAM",
+        "stat-none": "Ninguno",
+        "stat-ram-pct": "RAM %",
+        "stat2": "Estadística 2",
+        "title": "Título",
+        "vertical": "Vertical",
+        "visualization-mode": "Modo",
+        "visualization-mode-all": "Todo",
+        "visualization-mode-bars": "Barras",
+        "visualization-mode-bars-rings": "Barras + Anillos",
+        "visualization-mode-rings": "Anillos",
+        "visualization-mode-wave": "Ola",
+        "visualization-mode-wave-rings": "Ola + Anillos",
+        "wave-thickness": "Grosor de la Ola",
+        "widget-section": "Widget"
+      },
+      "types": {
+        "weather": "Pronóstico"
+      }
+    },
+    "weather": {
+      "error": "Error",
+      "loading": "Cargando",
+      "off": "Pronóstico apagado"
     }
   },
   "dock": {
@@ -154,7 +278,7 @@
         "title": "Sesión"
       },
       "wallpaper": {
-        "title": "Fondo de pantalla"
+        "title": "Fondo de Pantalla"
       },
       "window": {
         "title": "Ventanas"
@@ -170,7 +294,8 @@
   },
   "notifications": {
     "internal": {
-      "calendar-google-connect-start-failed": "No se pudo empezar la autorización con Google. Revise su conexión al internet"
+      "calendar-google-connect-start-failed": "No se pudo empezar la autorización con Google. Revise su conexión al internet",
+      "wallpaper-palette-export": "Paleta Personalizada"
     }
   },
   "osd": {
@@ -220,25 +345,178 @@
       "power-saver": "Ahorro de energía"
     }
   },
+  "session": {
+    "actions": {
+      "lock-and-suspend": "Bloquear y Suspender",
+      "reboot": "Reiniciar",
+      "shutdown": "Apagar",
+      "suspend": "Suspender"
+    }
+  },
   "settings": {
+    "actions": {
+      "reset": "Resetear"
+    },
+    "badges": {
+      "advanced": "Avanzado",
+      "inherited": "Heredado",
+      "monitor": "Monitor",
+      "override": "Sobrescrito"
+    },
+    "calendar-accounts": {
+      "add-title": "Agregar Cuenta de Calendario",
+      "color-label": "Color",
+      "delete-error": "No se pudo eliminar la cuenta de calendario.",
+      "edit-title": "Modificar Cuenta de Calendario",
+      "id-label": "ID de la Cuenta",
+      "name-placeholder": "Calendario Personal",
+      "password-keep-placeholder": "Deje vacío para mantener la contraseña actual",
+      "password-save-error": "No se pudo guardar la contraseña de la cuenta de calendario.",
+      "provider": {
+        "custom": "CalDAV",
+        "google": "Google",
+        "icloud": "iCloud"
+      },
+      "provider-label": "Proveedor",
+      "save": "Guardar",
+      "save-connect": "Guardar y Conectar",
+      "save-error": "No se pudo guardar la cuenta de calendario.",
+      "server-url-label": "URL del Servidor",
+      "username-label": "Nombre de Usuario",
+      "username-placeholder": "nombre@ejemplo.com"
+    },
+    "controls": {
+      "keybind": {
+        "recording-placeholder": "Presione una combinación de teclas."
+      },
+      "list": {
+        "add-entry-placeholder": "Agregar entrada..."
+      },
+      "path-browse": {
+        "file-title": "Seleccione archivo",
+        "folder-title": "Seleccione carpeta"
+      },
+      "select": {
+        "unknown-value": "{} desconocido "
+      }
+    },
+    "dialogs": {
+      "color-picker": {
+        "title": "Seleccione un Color"
+      }
+    },
+    "entities": {
+      "bar": {
+        "create": "Crear",
+        "delete": "Eliminar",
+        "delete-confirm-desc": "Esta barra creada por la interfaz sera eliminada de settings.toml.",
+        "delete-confirm-title": "Eliminar \"{name}\"?",
+        "id-placeholder": "ID de Barra",
+        "label": "Barra: {name}",
+        "management": "Barra",
+        "move-down": "Mover Abajo",
+        "move-up": "Mover Arriba",
+        "new": "Crear Barra",
+        "rename": "Renombrar",
+        "rename-save": "Guardar"
+      },
+      "monitor-override": {
+        "create": "Crear",
+        "delete": "Eliminar",
+        "delete-confirm-desc": "Esta sobrescripción de monitor sera elimina de settings.toml.",
+        "delete-confirm-title": "Eliminar \"{name}\"?",
+        "label": "Monitor: {name}",
+        "management": "Sobrescribir Monitor",
+        "new": "Sobrescribir Monitor",
+        "rename": "Renombrar",
+        "rename-save": "Guardar"
+      },
+      "widget": {
+        "add": "Agregar Widget",
+        "detail": {
+          "custom": "Widget Personalizado"
+        },
+        "group": {
+          "action": "Grupo",
+          "border": "Borde",
+          "edit": "Eliminar estilo",
+          "fill": "Fondo",
+          "opacity": "Opacidad"
+        }
+      }
+    },
+    "errors": {
+      "bar": {
+        "create": "No se pudo crear la barra.",
+        "delete": "No se pudo eliminar la barra.",
+        "move": "No se pudo mover la barra.",
+        "rename": "No se pudo renombar la barra."
+      }
+    },
     "navigation": {
       "groups": {
         "launcher": "Lanzador",
-        "osd": "Visualizacion en pantalla"
+        "osd": "Visualizacion en pantalla",
+        "session-panel": "Sesión",
+        "wallpaper": "Fondo de Pantalla",
+        "weather": "Pronóstico"
       },
       "sections": {
+        "bar": "Barra",
         "dock": "Dock",
-        "osd": "Visualizacion en pantalla"
+        "osd": "Visualizacion en pantalla",
+        "wallpaper": "Fondo de Pantalla"
       }
     },
     "options": {
+      "control-center": {
+        "sidebar": {
+          "compact": "Compacto",
+          "full": "Completo",
+          "none": "Ninguno"
+        }
+      },
       "dock-launcher-position": {
         "end": "Fin",
         "none": "Ninguno",
         "start": "Inicio"
+      },
+      "theme": {
+        "source": {
+          "wallpaper": "Fondo de Pantalla"
+        }
+      },
+      "wallpaper": {
+        "fill": {
+          "center": "Centro",
+          "fit": "Ajustar"
+        },
+        "order": {
+          "alphabetical": "Alfabético",
+          "random": "Aleatorio"
+        },
+        "transition": {
+          "honeycomb": "Panal"
+        }
+      },
+      "weather": {
+        "unit": {
+          "imperial": "Imperial",
+          "metric": "Métrico"
+        }
       }
     },
     "schema": {
+      "appearance": {
+        "app-icon-colorize": {
+          "label": "Colorear iconos de apps"
+        }
+      },
+      "lockscreen": {
+        "wallpaper": {
+          "label": "Fondo de Pantalla"
+        }
+      },
       "notifications": {
         "monitors": {
           "label": "Monitores"
@@ -253,6 +531,21 @@
       "services": {
         "location-address": {
           "placeholder": "Ciudad, País"
+        },
+        "weather": {
+          "description": "Habilitar el servicio de pronóstico",
+          "label": "Pronóstico"
+        },
+        "weather-effects": {
+          "description": "Mostrar efectos visuales del pronóstico",
+          "label": "Efectos del pronóstico"
+        },
+        "weather-refresh-interval": {
+          "label": ""
+        },
+        "weather-unit": {
+          "description": "Sistema de unidades utilizado en el pronóstico",
+          "label": "Unidades"
         }
       },
       "shell": {
@@ -297,6 +590,14 @@
         },
         "osd-scale": {
           "label": "Escala"
+        },
+        "show-location": {
+          "description": "Mostrar el nombre de la ubicacion en el widget del pronóstico"
+        }
+      },
+      "wallpaper": {
+        "automation-order": {
+          "label": "Orden"
         }
       }
     },
@@ -314,6 +615,7 @@
         "taskbar": "Barra de tareas",
         "volume": "Volumen",
         "wallpaper": "Fondo de pantalla",
+        "weather": "Pronóstico",
         "workspaces": "Espacios de trabajo"
       }
     },
@@ -378,7 +680,8 @@
         },
         "title": {
           "open": "Abrir archivo",
-          "save": "Guardar archivo"
+          "save": "Guardar archivo",
+          "select-folder": "Seleccionar Carpeta"
         }
       }
     }
@@ -386,6 +689,7 @@
   "weather": {
     "conditions": {
       "full": {
+        "clear-sky": "Cielo despejado",
         "drizzle": "Llovizna",
         "fog": "Niebla",
         "overcast": "Cubierto",
@@ -398,8 +702,14 @@
         "drizzle": "Llovizna",
         "fog": "Niebla",
         "overcast": "Cubierto",
-        "storm": "Tormenta"
+        "storm": "Tormenta",
+        "weather": "Pronóstico"
       }
     }
+  },
+  "window-switcher": {
+    "empty": "No hay ventanas abiertas",
+    "hint": "Tab · Shift+Tab · Flechas de direcciones · Suelte Alt para cambiar · Esc para cancelar",
+    "title": "Ventanas"
   }
 }

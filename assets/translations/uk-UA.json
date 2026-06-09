@@ -8,5 +8,14 @@
     "polkit": {
       "authenticate": "Автентифікувати"
     }
+  },
+  "settings": {
+    "schema": {
+      "appearance": {
+        "app-icon-colorize": {
+          "label": "Розфарбувати іконки програм"
+        }
+      }
+    }
   }
 }
