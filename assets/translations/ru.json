@@ -168,7 +168,7 @@
       },
       "select-avatar": "Выбрать аватар",
       "unknown": "неизвестный",
-      "user-facts": "{user}@{host}Работает уже: {uptime}Noctalia {version}",
+      "uptime": "Работает уже: {uptime}",
       "weather": {
         "configure-location": "Добавьте [weather].address или включите auto_locate.",
         "data-unavailable": "Данные о погоде недоступны.",

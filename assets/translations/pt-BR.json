@@ -168,7 +168,7 @@
       },
       "select-avatar": "Selecionar Avatar",
       "unknown": "desconhecido",
-      "user-facts": "{user}@{host}\\nTempo Ativo - {uptime}\\nNoctalia {version}",
+      "uptime": "Tempo Ativo - {uptime}",
       "weather": {
         "configure-location": "Adicionar [weather].address ou habilitar auto_locate.",
         "data-unavailable": "Dados de clima indisponíveis",
@@ -1412,11 +1412,11 @@
             "label": "Conectar o carregador"
           },
           "bluetooth-disabled": {
-            "description": "Comando para rodar quando o Bluetooth for desativado",
-            "label": "Bluetooth Desativado"
+            "description": "Comando para rodar quando o Bluetooth for desabilitado",
+            "label": "Ao Desativar o Bluetooth"
           },
           "bluetooth-enabled": {
-            "description": "Comando para rodar quando o Bluetooth for ativado",
+            "description": "Comando para rodar quando o Bluetooth for habilitado",
             "label": "Bluetooth Ativado"
           },
           "colors-changed": {
@@ -1926,7 +1926,7 @@
           "label": "Digite para Abrir"
         },
         "offline-mode": {
-          "description": "Bloquear todas as solicitações de rede de saída",
+          "description": "Bloquear todas as solicitações de saída de rede",
           "label": "Modo Off-line"
         },
         "osd-background-opacity": {
@@ -1934,7 +1934,7 @@
           "label": "Opacidade do Plano de Fundo"
         },
         "osd-kinds-bluetooth": {
-          "description": "Exibir uma pop-up OSD quando o Bluetooth for ativado/desativado",
+          "description": "Exibir uma pop-up OSD quando o Bluetooth for habilitado/desabilitado",
           "label": "Bluetooth"
         },
         "osd-kinds-brightness": {
@@ -2054,7 +2054,7 @@
         },
         "telemetry": {
           "description": "Envia um pequeno ping anônimo de inicialização com a versão, o sistema operacional, o compositor, as resoluções do monitor, a RAM e a escala da interface do usuário",
-          "label": "Ping de Início anônimo"
+          "label": "Ping de Início Anônimo"
         },
         "time-format": {
           "description": "Formato de hora padrão para a interface do usuário do shell sem configuração própria",

@@ -168,7 +168,7 @@
       },
       "select-avatar": "Profilkép kiválasztása",
       "unknown": "ismeretlen",
-      "user-facts": "{user}@{host}\nRendszeridő - {uptime}\nNoctalia {version}",
+      "uptime": "Rendszeridő - {uptime}",
       "weather": {
         "configure-location": "Add meg a [weather].address értéket vagy engedélyezd az auto_locate beállítást",
         "data-unavailable": "Az időjárási adatok nem érhetők el.",

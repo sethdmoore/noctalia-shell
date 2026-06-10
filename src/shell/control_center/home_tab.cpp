@@ -95,6 +95,10 @@ namespace {
     return formatLocalTime(format);
   }
 
+  std::string userHostLine() { return std::format("{}@{}", sessionDisplayName(), hostName()); }
+
+  std::string noctaliaVersionLine() { return std::format("Noctalia {}", noctalia::build_info::displayVersion()); }
+
   void applyHomeCardStyle(Flex& card, float scale, float fillOpacity, bool showBorder) {
     applySectionCardStyle(card, scale, fillOpacity, showBorder);
     card.setGap(Style::spaceSm * scale);
@@ -219,6 +223,9 @@ std::unique_ptr<Flex> HomeTab::create() {
           },
       })
   );
+  const auto configureUserDetailLabel = [scale](Label& label) {
+    label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.36f}, 0.0f, 1.0f * scale);
+  };
   auto userRow = ui::row(
       {.align = FlexAlign::Center, .gap = Style::spaceMd * scale}, std::move(avatarArea),
       ui::column(
@@ -239,13 +246,25 @@ std::unique_ptr<Flex> HomeTab::create() {
                   [scale](Label& label) { label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.42f}, 0.0f, 1.0f * scale); },
           }),
           ui::label({
-              .out = &m_userFacts,
+              .out = &m_userHost,
+              .text = userHostLine(),
+              .fontSize = Style::fontSizeCaption * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              .configure = configureUserDetailLabel,
+          }),
+          ui::label({
+              .out = &m_userUptime,
               .text = "…",
               .fontSize = Style::fontSizeCaption * scale,
               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-              .configure = [scale](Label& label) {
-                label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.36f}, 0.0f, 1.0f * scale);
-              },
+              .configure = configureUserDetailLabel,
+          }),
+          ui::label({
+              .out = &m_userVersion,
+              .text = noctaliaVersionLine(),
+              .fontSize = Style::fontSizeCaption * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              .configure = configureUserDetailLabel,
           })
       )
   );
@@ -643,10 +662,14 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     m_mediaTrack->setMaxLines(2);
   }
 
-  if (m_userCard != nullptr && m_userFacts != nullptr) {
+  if (m_userCard != nullptr) {
     const float userWrap = innerWidth(m_userCard);
-    m_userFacts->setMaxWidth(userWrap);
-    m_userFacts->setMaxLines(1);
+    for (Label* label : {m_userHost, m_userUptime, m_userVersion}) {
+      if (label != nullptr) {
+        label->setMaxWidth(userWrap);
+        label->setMaxLines(1);
+      }
+    }
   }
 
   if (m_userAvatar != nullptr && m_userMain != nullptr) {
@@ -866,7 +889,9 @@ void HomeTab::onClose() {
   m_dateLabel = nullptr;
   m_weatherGlyph = nullptr;
   m_weatherLine = nullptr;
-  m_userFacts = nullptr;
+  m_userHost = nullptr;
+  m_userUptime = nullptr;
+  m_userVersion = nullptr;
   m_settingsButton = nullptr;
   m_sessionButton = nullptr;
   m_wallpaperButton = nullptr;
@@ -914,8 +939,10 @@ void HomeTab::syncScaledFonts() {
   if (m_weatherLine != nullptr) {
     m_weatherLine->setFontSize(Style::fontSizeCaption * s);
   }
-  if (m_userFacts != nullptr) {
-    m_userFacts->setFontSize(Style::fontSizeCaption * s);
+  for (Label* label : {m_userHost, m_userUptime, m_userVersion}) {
+    if (label != nullptr) {
+      label->setFontSize(Style::fontSizeCaption * s);
+    }
   }
   if (m_wallpaperButton != nullptr) {
     m_wallpaperButton->setGlyphSize(Style::fontSizeBody * s);
@@ -973,16 +1000,17 @@ void HomeTab::sync(Renderer& renderer) {
     }
   }
 
-  if (m_userFacts != nullptr) {
+  if (m_userHost != nullptr) {
+    m_userHost->setText(userHostLine());
+  }
+  if (m_userUptime != nullptr) {
     const auto uptime = systemUptime();
     const std::string uptimeText =
         uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.home.unknown");
-    m_userFacts->setText(
-        i18n::tr(
-            "control-center.home.user-facts", "user", sessionDisplayName(), "host", hostName(), "uptime", uptimeText,
-            "version", noctalia::build_info::displayVersion()
-        )
-    );
+    m_userUptime->setText(i18n::tr("control-center.home.uptime", "uptime", uptimeText));
+  }
+  if (m_userVersion != nullptr) {
+    m_userVersion->setText(noctaliaVersionLine());
   }
 
   if (m_weatherGlyph != nullptr && m_weatherLine != nullptr) {

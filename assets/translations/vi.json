@@ -168,7 +168,7 @@
       },
       "select-avatar": "Chọn ảnh đại diện",
       "unknown": "không xác định",
-      "user-facts": "{user}@{host}Thời gian hoạt động - {uptime}Noctalia {version}",
+      "uptime": "Thời gian hoạt động - {uptime}",
       "weather": {
         "configure-location": "Thêm [weather].address hoặc bật auto_locate.",
         "data-unavailable": "Không thể tải dữ liệu thời tiết.",

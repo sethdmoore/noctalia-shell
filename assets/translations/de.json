@@ -168,7 +168,7 @@
       },
       "select-avatar": "Avatar auswählen",
       "unknown": "unbekannt",
-      "user-facts": "{user}@{host}Betriebszeit - {uptime}Noctalia {version}",
+      "uptime": "Betriebszeit - {uptime}",
       "weather": {
         "configure-location": "Füge [weather].address hinzu oder aktiviere auto_locate.",
         "data-unavailable": "Wetterdaten nicht verfügbar.",

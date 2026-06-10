@@ -113,7 +113,7 @@
       "no-output-devices-body": "当前没有可用的播放接收端。",
       "no-output-selected": "未选择输出设备",
       "output-volume": "输出音量",
-      "unavailable-body": "Pipewire 未处于活动状态。",
+      "unavailable-body": "PipeWire 未处于活动状态。",
       "unavailable-title": "音频不可用"
     },
     "bluetooth": {
@@ -168,7 +168,7 @@
       },
       "select-avatar": "选择头像",
       "unknown": "未知",
-      "user-facts": "{user}@{host}\\n已运行 {uptime}\\nNoctalia {version}",
+      "uptime": "已运行 {uptime}",
       "weather": {
         "configure-location": "请添加 [weather].address 或启用 auto_locate。",
         "data-unavailable": "天气数据不可用。",
@@ -339,12 +339,12 @@
         "font-family-default": "系统默认",
         "format": "格式",
         "hide-when-no-media": "无媒体时隐藏",
-        "high-color": "高值颜色",
+        "high-color": "高频颜色",
         "horizontal": "水平",
         "image-path": "图像",
         "inner-diameter": "内径",
         "layout": "布局",
-        "low-color": "低值颜色",
+        "low-color": "低频颜色",
         "mirrored": "镜像",
         "opacity": "不透明度",
         "primary-color": "主色",
@@ -528,7 +528,7 @@
       "dbus-disabled": "DBus 通知已禁用",
       "desktop-widgets-editor": "桌面小组件编辑器",
       "desktop-widgets-editor-enabled": "桌面小组件编辑器已开启。切换到空的工作区以查看编辑器图层。",
-      "greeter-sync": "Noctalia 欢迎界面",
+      "greeter-sync": "Noctalia Greeter",
       "greeter-sync-success": "外观已同步。更改将在下次登录时生效。",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "此快捷键仅接受不带修饰键的单键。",
@@ -789,7 +789,7 @@
       },
       "reset-page": "未能重置部分设置。",
       "support-report": "未能保存支持报告。",
-      "sync-greeter": "无法将外观同步至 Noctalia 欢迎界面。",
+      "sync-greeter": "无法将外观同步至 Noctalia Greeter。",
       "widget": {
         "rename": "无法重命名该命名小组件。"
       },
@@ -858,8 +858,8 @@
           "description": "启用内置身份验证代理"
         },
         "sync-greeter": {
-          "description": "将当前壁纸与配色同步至 Noctalia 欢迎界面（需要管理员授权）",
-          "label": "Noctalia 欢迎界面"
+          "description": "将当前壁纸与配色同步至 Noctalia Greeter（需要管理员授权）",
+          "label": "Noctalia Greeter"
         },
         "telemetry": {
           "description": "启动时发送匿名统计信息，包含版本、操作系统、合成器、显示器分辨率、内存及 UI 缩放比例"

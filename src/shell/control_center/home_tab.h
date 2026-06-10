@@ -89,7 +89,9 @@ private:
   Label* m_dateLabel = nullptr;
   Glyph* m_weatherGlyph = nullptr;
   Label* m_weatherLine = nullptr;
-  Label* m_userFacts = nullptr;
+  Label* m_userHost = nullptr;
+  Label* m_userUptime = nullptr;
+  Label* m_userVersion = nullptr;
   Button* m_settingsButton = nullptr;
   Button* m_sessionButton = nullptr;
   Button* m_wallpaperButton = nullptr;
