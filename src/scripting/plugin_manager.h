@@ -3,6 +3,7 @@
 #include "config/config_types.h"
 
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -44,6 +45,12 @@ namespace scripting {
   public:
     explicit PluginManager(ConfigService& config) : m_config(config) {}
 
+    // Called after an out-of-band registry change that isn't a config reload — i.e. a
+    // git `update()` that advanced a source. Lets Application rebuild the bar and
+    // reconcile services for the new revision. Enable/disable already propagate via the
+    // config-reload path, so they don't use this.
+    void setOnChanged(std::function<void()> onChanged) { m_onChanged = std::move(onChanged); }
+
     // Resolve source roots + enabled filter from config and (re)scan the registry.
     // No-op when the plugins config is unchanged since the last applied refresh.
     void refresh();
@@ -80,12 +87,14 @@ namespace scripting {
     [[nodiscard]] std::optional<PluginSourceConfig> findSource(std::string_view name) const;
     // Plugin ids offered by the implicit local dev source.
     [[nodiscard]] std::unordered_set<std::string> localPluginIds() const;
-    // Sparse-check-out any enabled git-source plugin missing from its (already
-    // cloned) source — heals a wiped clone or a restored config. Returns whether
-    // anything was materialized. No network when nothing is missing.
+    // Re-derive any enabled git-source plugin missing from disk — re-clones a wiped
+    // source and checks out enabled plugins it ships. Heals a deleted clone or a
+    // restored config. Returns whether anything was materialized. No network when
+    // nothing is missing.
     bool ensureEnabledMaterialized(const PluginsConfig& plugins) const;
 
     ConfigService& m_config;
+    std::function<void()> m_onChanged;
     PluginsConfig m_lastApplied;
     bool m_applied = false;
   };

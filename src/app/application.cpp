@@ -401,12 +401,18 @@ void Application::run(std::function<void()> startupReadyCallback) {
   runStartupPhase("initUi", [this]() { initUi(); });
   runStartupPhase("initPluginServices", [this]() {
     m_pluginServiceHost.start(m_configService.config().plugins.pluginSettings);
-    // Re-seed services when plugin settings change. Guarded by the plugins change
-    // flag so unrelated reloads don't churn running service runtimes.
+    // Reconcile services when plugin settings change (start new, stop removed, re-seed
+    // changed). Guarded by the plugins change flag so unrelated reloads don't churn.
     m_configService.addReloadCallback([this]() {
       if (m_configService.lastChange().plugins) {
         m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
       }
+    });
+    // A git update() advances a source without a config change, so it bypasses the
+    // reload path: rebuild the bar and reconcile services for the new revision.
+    m_pluginManager.setOnChanged([this]() {
+      m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
+      m_bar.refresh();
     });
   });
   runStartupPhase("initIpc", [this]() { initIpc(); });

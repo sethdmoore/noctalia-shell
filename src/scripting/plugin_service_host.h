@@ -4,6 +4,7 @@
 #include "scripting/plugin_ipc.h"
 #include "scripting/script_runtime.h"
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -63,6 +64,13 @@ namespace scripting {
     // Subscribe to the service's runtime (to track update-interval changes) and arm
     // its update timer. Shared by start() and refresh().
     void subscribeAndArm(Service& service);
+    // Build, register, and start a service runtime for an entry. Returns null on an
+    // empty/unreadable source.
+    [[nodiscard]] std::unique_ptr<Service>
+    makeService(const std::string& entryId, const std::filesystem::path& source, ScriptWidgetSettings seeded);
+    // Full teardown for removal/shutdown: unregister IPC, stop timer + runtime, and
+    // mark the alive token dead so any in-flight callback is a no-op.
+    void stopService(Service& service);
     // Build the effective seeded settings for an entry (manifest defaults + plugin
     // overrides). Returns nullopt if the entry no longer resolves.
     [[nodiscard]] std::optional<ScriptWidgetSettings>

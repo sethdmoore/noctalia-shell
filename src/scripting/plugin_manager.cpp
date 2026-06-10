@@ -100,18 +100,24 @@ namespace scripting {
       }
       const std::filesystem::path root = sourceRoot(source);
       if (!std::filesystem::exists(root / ".git", ec)) {
-        continue; // not cloned yet — enable/list/update will clone
+        // Source clone is gone (e.g. the state dir was wiped). Re-clone it (metadata
+        // only); the per-plugin materialize below checks out what's enabled.
+        std::filesystem::create_directories(root.parent_path(), ec);
+        kLog.info("re-cloning missing plugin source '{}'", source.name);
+        if (!plugin_git::cloneBlobless(source.location, root)) {
+          continue; // offline / unreachable — leave it; list/enable will retry
+        }
       }
       for (const auto& id : plugins.enabled) {
         const std::string sub = pluginSubdir(id);
         if (std::filesystem::exists(root / sub / "plugin.toml", ec)) {
-          continue; // already checked out
+          continue; // already materialized
         }
         if (!plugin_git::hasPath(root, sub + "/plugin.toml")) {
           continue; // this source doesn't ship it
         }
         kLog.info("materializing enabled plugin '{}' from source '{}'", id, source.name);
-        if (plugin_git::sparseAdd(root, sub)) {
+        if (plugin_git::materialize(root, "HEAD", sub)) {
           materialized = true;
         }
       }
@@ -144,9 +150,9 @@ namespace scripting {
       const std::filesystem::path root = sourceRoot(*source);
       const std::string subdir = pluginSubdir(id);
       if (source->kind == PluginSourceKind::Git) {
-        const auto materialized = plugin_git::sparseAdd(root, subdir);
+        const auto materialized = plugin_git::materialize(root, "HEAD", subdir);
         if (!materialized) {
-          return {.ok = false, .error = "sparse-checkout failed: " + materialized.err};
+          return {.ok = false, .error = "materialize failed: " + materialized.err};
         }
       }
       std::string error;
@@ -238,7 +244,7 @@ namespace scripting {
 
     // The whole git sequence runs off-thread; only the final registry rescan marshals
     // back to the main thread. `this` is an Application member, so it outlives the worker.
-    std::thread([root, sourceName = std::move(sourceName), enabled = std::move(enabled)]() mutable {
+    std::thread([this, root, sourceName = std::move(sourceName), enabled = std::move(enabled)]() mutable {
       const auto fetched = plugin_git::fetch(root);
       if (!fetched) {
         DeferredCall::callLater([sourceName, err = fetched.err]() {
@@ -273,14 +279,33 @@ namespace scripting {
         }
       }
 
-      const auto applied = plugin_git::fastForward(root, newRev);
-      DeferredCall::callLater([sourceName, ok = static_cast<bool>(applied), err = applied.err, newRev]() {
+      // Apply: re-derive every enabled plugin this source ships at the new revision
+      // (checkout -- path; clobbers, no merge — a tampered working tree can't block it),
+      // then advance HEAD so catalog/hasPath reads follow. A failed materialize leaves
+      // HEAD where it is; the partial state is re-derivable on the next run.
+      for (const auto& id : enabled) {
+        const std::string sub = pluginSubdir(id);
+        if (!plugin_git::hasPath(root, sub + "/plugin.toml", newRev)) {
+          continue; // not shipped by this source
+        }
+        if (const auto m = plugin_git::materialize(root, newRev, sub); !m) {
+          DeferredCall::callLater([sourceName, id, err = m.err]() {
+            kLog.warn("update '{}': materialize '{}' failed: {}", sourceName, id, err);
+          });
+          return;
+        }
+      }
+      const auto applied = plugin_git::setHead(root, newRev);
+      DeferredCall::callLater([this, sourceName, ok = static_cast<bool>(applied), err = applied.err, newRev]() {
         if (!ok) {
-          kLog.warn("update '{}': apply failed: {}", sourceName, err);
+          kLog.warn("update '{}': set HEAD failed: {}", sourceName, err);
           return;
         }
         kLog.info("updated source '{}' -> {}", sourceName, newRev);
         PluginRegistry::instance().scan(); // re-parse manifests; live .luau changes hot-reload via file watch
+        if (m_onChanged) {
+          m_onChanged(); // rebuild bar + reconcile services for the new revision
+        }
       });
     }).detach();
   }

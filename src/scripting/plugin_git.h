@@ -36,9 +36,13 @@ namespace scripting {
     [[nodiscard]] GitResult
     showFile(const std::filesystem::path& dest, std::string_view repoPath, std::string_view rev = "HEAD");
 
-    // Cone sparse-checkout: materialize `subdir` in the working tree. First call
-    // on a fresh clone sets the cone + checks out HEAD; later calls add to it.
-    [[nodiscard]] GitResult sparseAdd(const std::filesystem::path& dest, std::string_view subdir);
+    // Re-derive `subdir` in the working tree from `rev`: wipe any prior/tampered/partial
+    // copy, then `git checkout <rev> -- <subdir>` (clobbers unconditionally — no merge,
+    // so a dirty working tree can't block it; blobs lazily fetch from the partial clone).
+    // The materialized files are a disposable cache: always re-extractable from the
+    // object store, so manual edits or interrupted runs self-heal on the next call.
+    [[nodiscard]] GitResult
+    materialize(const std::filesystem::path& dest, std::string_view rev, std::string_view subdir);
 
     // `git -C dest fetch origin` — update remote-tracking refs + FETCH_HEAD; the
     // working tree is untouched, so the new revision can be inspected before applying.
@@ -47,16 +51,19 @@ namespace scripting {
     // `git -C dest rev-parse FETCH_HEAD` — out = the just-fetched revision (trimmed).
     [[nodiscard]] GitResult remoteHead(const std::filesystem::path& dest);
 
-    // `git -C dest merge --ff-only <rev>` — apply a fetched revision to the working tree.
-    [[nodiscard]] GitResult fastForward(const std::filesystem::path& dest, std::string_view rev);
+    // `git -C dest update-ref HEAD <rev>` — advance HEAD (and its branch) to a fetched
+    // revision after materializing it, so HEAD-relative reads (catalog, hasPath) reflect
+    // the applied revision. Does not touch the working tree.
+    [[nodiscard]] GitResult setHead(const std::filesystem::path& dest, std::string_view rev);
 
     // `git -C dest rev-parse HEAD` — out = commit sha (trimmed).
     [[nodiscard]] GitResult headRevision(const std::filesystem::path& dest);
 
-    // `git -C dest cat-file -e HEAD:<repoPath>` — true if the path exists in HEAD
-    // (tree metadata only, no blob fetch). Used to confirm a source actually ships
-    // a plugin before sparse-checking it out.
-    [[nodiscard]] bool hasPath(const std::filesystem::path& dest, std::string_view repoPath);
+    // `git -C dest cat-file -e <rev>:<repoPath>` — true if the path exists at `rev`
+    // (tree metadata only, no blob fetch). Used to confirm a source actually ships a
+    // plugin before materializing it. `rev` defaults to HEAD.
+    [[nodiscard]] bool
+    hasPath(const std::filesystem::path& dest, std::string_view repoPath, std::string_view rev = "HEAD");
 
   } // namespace plugin_git
 

@@ -55,21 +55,15 @@ namespace scripting::plugin_git {
     );
   }
 
-  GitResult sparseAdd(const std::filesystem::path& dest, std::string_view subdir) {
+  GitResult materialize(const std::filesystem::path& dest, std::string_view rev, std::string_view subdir) {
+    // Discard any prior copy first so the result exactly matches `rev` (no stale files
+    // left over from an older revision, no tampered edits). `checkout <rev> -- <path>`
+    // then recreates it from the object store, lazily fetching blobs.
     std::error_code ec;
-    const bool initialized = std::filesystem::exists(dest / ".git" / "info" / "sparse-checkout", ec);
-    if (!initialized) {
-      auto set =
-          run({"git", "-C", dest.string(), "sparse-checkout", "set", "--cone", std::string(subdir)}, kNetworkTimeout,
-              kProgressCap);
-      if (!set) {
-        return set;
-      }
-      // A --no-checkout clone leaves HEAD unpopulated; materialize the cone now.
-      return run({"git", "-C", dest.string(), "checkout"}, kNetworkTimeout, kProgressCap);
-    }
+    std::filesystem::remove_all(dest / std::filesystem::path(subdir), ec);
     return run(
-        {"git", "-C", dest.string(), "sparse-checkout", "add", std::string(subdir)}, kNetworkTimeout, kProgressCap
+        {"git", "-C", dest.string(), "checkout", std::string(rev), "--", std::string(subdir)}, kNetworkTimeout,
+        kProgressCap
     );
   }
 
@@ -84,8 +78,8 @@ namespace scripting::plugin_git {
     return r;
   }
 
-  GitResult fastForward(const std::filesystem::path& dest, std::string_view rev) {
-    return run({"git", "-C", dest.string(), "merge", "--ff-only", std::string(rev)}, kNetworkTimeout, kProgressCap);
+  GitResult setHead(const std::filesystem::path& dest, std::string_view rev) {
+    return run({"git", "-C", dest.string(), "update-ref", "HEAD", std::string(rev)}, kLocalTimeout, kProgressCap);
   }
 
   GitResult headRevision(const std::filesystem::path& dest) {
@@ -94,9 +88,9 @@ namespace scripting::plugin_git {
     return r;
   }
 
-  bool hasPath(const std::filesystem::path& dest, std::string_view repoPath) {
-    return run({"git", "-C", dest.string(), "cat-file", "-e", "HEAD:" + std::string(repoPath)}, kLocalTimeout,
-               kProgressCap)
+  bool hasPath(const std::filesystem::path& dest, std::string_view repoPath, std::string_view rev) {
+    return run({"git", "-C", dest.string(), "cat-file", "-e", std::string(rev) + ":" + std::string(repoPath)},
+               kLocalTimeout, kProgressCap)
         .ok;
   }
 
