@@ -299,6 +299,9 @@ foreach _p : [
     wayland_protos_dir / 'staging/ext-background-effect/ext-background-effect-v1.xml'],
   ['fractional-scale-v1',
     wayland_protos_dir / 'staging/fractional-scale/fractional-scale-v1.xml'],
+  # color-management-v1 (wp_color_manager_v1); needs wayland-protocols >= 1.41.
+  ['color-management-v1',
+    wayland_protos_dir / 'staging/color-management/color-management-v1.xml'],
   ['viewporter',
     wayland_protos_dir / 'stable/viewporter/viewporter.xml'],
   ['idle-inhibit-unstable-v1',

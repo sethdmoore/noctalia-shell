@@ -46,6 +46,8 @@ struct zwlr_gamma_control_manager_v1;
 struct zwlr_screencopy_manager_v1;
 struct wp_fractional_scale_manager_v1;
 struct wp_viewporter;
+struct wp_color_manager_v1;
+struct wp_color_management_output_v1;
 class ClipboardService;
 class FocusGrabService;
 struct DataControlOps;
@@ -69,6 +71,13 @@ struct WaylandOutput {
   std::int32_t transform = 0;
   zxdg_output_v1* xdgOutput = nullptr;
   bool done = false;
+
+  // Per-output colorspace state (wp_color_management_output_v1). colorOutput is
+  // null on SDR-only compositors; hdr flips live on toggle; hdrDetected guards
+  // the "not yet probed" state from a genuine SDR reading.
+  wp_color_management_output_v1* colorOutput = nullptr;
+  bool hdr = false;
+  bool hdrDetected = false;
 };
 
 class WaylandConnection {
@@ -149,6 +158,7 @@ public:
   [[nodiscard]] WaylandOutput* findOutputByWl(wl_output* wlOutput);
   [[nodiscard]] const WaylandOutput* findOutputByWl(wl_output* wlOutput) const;
   [[nodiscard]] WaylandOutput* findOutputByXdg(zxdg_output_v1* xdgOutput);
+  [[nodiscard]] WaylandOutput* findOutputByColorOutput(wp_color_management_output_v1* colorOutput);
 
   [[nodiscard]] bool hasXdgActivation() const noexcept;
   [[nodiscard]] std::string requestActivationToken(wl_surface* surface) const;
@@ -195,6 +205,13 @@ public:
   [[nodiscard]] zwlr_layer_surface_v1* layerSurfaceFor(wl_surface* surface) const noexcept;
   void notifyOutputReady(wl_output* output);
 
+  // wp_color_management_output_v1 listener entrypoints: re-probe on change, then
+  // receive the decoded HDR/SDR verdict.
+  void onOutputImageDescriptionChanged(wp_color_management_output_v1* colorOutput);
+  void onOutputColorDescription(
+      wl_output* output, bool hdr, int transferFunction, int primaries, bool hasLuminance, std::uint32_t maxLuminance
+  );
+
   // Registry listener entrypoints
   static void
   handleGlobal(void* data, wl_registry* registry, std::uint32_t name, const char* interface, std::uint32_t version);
@@ -210,6 +227,9 @@ private:
   void bindVirtualKeyboardService();
   void cleanup();
   void logStartupSummary() const;
+  // Bind wp_color_management_output_v1 for an output and read its initial image
+  // description. No-op when the compositor lacks color management.
+  void setupOutputColorManagement(WaylandOutput& output);
 
   wl_display* m_display = nullptr;
   wl_registry* m_registry = nullptr;
@@ -232,6 +252,7 @@ private:
   zwlr_screencopy_manager_v1* m_screencopyManager = nullptr;
   std::unique_ptr<FocusGrabService> m_focusGrabService;
   wp_viewporter* m_viewporter = nullptr;
+  wp_color_manager_v1* m_colorManager = nullptr;
   bool m_backgroundEffectBlurSupported = false;
   void* m_dataControlManager = nullptr;
   const DataControlOps* m_dataControlOps = nullptr;

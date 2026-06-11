@@ -1,5 +1,6 @@
 #include "wayland/wayland_connection.h"
 
+#include "color-management-v1-client-protocol.h"
 #include "compositors/compositor_detect.h"
 #include "core/log.h"
 #include "cursor-shape-v1-client-protocol.h"
@@ -250,6 +251,176 @@ namespace {
 
   const xdg_wm_base_listener kXdgWmBaseListener = {
       .ping = xdgWmBasePing,
+  };
+
+  // The compositor advertises its colour-management capabilities as a burst of
+  // supported_* events terminated by `done`. Accumulate each category here and
+  // log one line per category at `done`, rather than one line per value.
+  // Allocated when the listener is added, freed in `done`. Raw enum values, to
+  // stay independent of enum-name assumptions.
+  struct ColorManagerCaps {
+    std::vector<std::uint32_t> renderIntents;
+    std::vector<std::uint32_t> features;
+    std::vector<std::uint32_t> transferFunctions;
+    std::vector<std::uint32_t> primaries;
+  };
+
+  std::string joinUints(const std::vector<std::uint32_t>& values) {
+    std::string out;
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      if (i != 0) {
+        out += ' ';
+      }
+      out += std::to_string(values[i]);
+    }
+    return out;
+  }
+
+  void colorManagerSupportedIntent(void* data, wp_color_manager_v1* /*mgr*/, std::uint32_t intent) {
+    static_cast<ColorManagerCaps*>(data)->renderIntents.push_back(intent);
+  }
+  void colorManagerSupportedFeature(void* data, wp_color_manager_v1* /*mgr*/, std::uint32_t feature) {
+    static_cast<ColorManagerCaps*>(data)->features.push_back(feature);
+  }
+  void colorManagerSupportedTfNamed(void* data, wp_color_manager_v1* /*mgr*/, std::uint32_t tf) {
+    static_cast<ColorManagerCaps*>(data)->transferFunctions.push_back(tf);
+  }
+  void colorManagerSupportedPrimariesNamed(void* data, wp_color_manager_v1* /*mgr*/, std::uint32_t primaries) {
+    static_cast<ColorManagerCaps*>(data)->primaries.push_back(primaries);
+  }
+  void colorManagerDone(void* data, wp_color_manager_v1* /*mgr*/) {
+    auto* caps = static_cast<ColorManagerCaps*>(data);
+    kLog.info("color-management: render intents = {}", joinUints(caps->renderIntents));
+    kLog.info("color-management: features = {}", joinUints(caps->features));
+    kLog.info("color-management: transfer functions = {}", joinUints(caps->transferFunctions));
+    kLog.info("color-management: primaries = {}", joinUints(caps->primaries));
+    delete caps;
+  }
+
+  const wp_color_manager_v1_listener kColorManagerListener = {
+      .supported_intent = colorManagerSupportedIntent,
+      .supported_feature = colorManagerSupportedFeature,
+      .supported_tf_named = colorManagerSupportedTfNamed,
+      .supported_primaries_named = colorManagerSupportedPrimariesNamed,
+      .done = colorManagerDone,
+  };
+
+  // Per-output HDR detection. The global wp_color_manager_v1 only advertises
+  // static capabilities; to read an output's *current* colorspace we bind
+  // wp_color_management_output_v1 per output and walk get_image_description() →
+  // ready → get_information(), then re-walk on each image_description_changed.
+  // The verdict keys on the transfer function (PQ/HLG ⇒ HDR; else SDR).
+  constexpr int kTfNamedSt2084Pq = 11; // SMPTE ST 2084 (PQ) — HDR
+  constexpr int kTfNamedHlg = 13;      // Hybrid Log-Gamma — HDR
+
+  // One probe's state (get_image_description → … → done); frees itself at the end.
+  struct OutputColorProbe {
+    WaylandConnection* self = nullptr;
+    wl_output* output = nullptr;
+    std::string label;
+    wp_image_description_v1* desc = nullptr;
+    int tfNamed = -1;
+    int primariesNamed = -1;
+    std::uint32_t maxLuminance = 0;
+    bool hasLuminance = false;
+  };
+
+  // Accumulate the info fields we use; no-op the rest. Every slot must be set or
+  // libwayland calls through a null pointer when the event fires.
+  void colorInfoTfNamed(void* data, wp_image_description_info_v1* /*info*/, std::uint32_t tf) {
+    static_cast<OutputColorProbe*>(data)->tfNamed = static_cast<int>(tf);
+  }
+  void colorInfoPrimariesNamed(void* data, wp_image_description_info_v1* /*info*/, std::uint32_t primaries) {
+    static_cast<OutputColorProbe*>(data)->primariesNamed = static_cast<int>(primaries);
+  }
+  void colorInfoLuminances(
+      void* data, wp_image_description_info_v1* /*info*/, std::uint32_t /*minLum*/, std::uint32_t maxLum,
+      std::uint32_t /*refLum*/
+  ) {
+    auto* probe = static_cast<OutputColorProbe*>(data);
+    probe->maxLuminance = maxLum;
+    probe->hasLuminance = true;
+  }
+  void colorInfoIccFile(void* /*data*/, wp_image_description_info_v1* /*info*/, std::int32_t /*icc*/, std::uint32_t /*size*/) {}
+  void colorInfoPrimaries(
+      void* /*data*/, wp_image_description_info_v1* /*info*/, std::int32_t /*rX*/, std::int32_t /*rY*/,
+      std::int32_t /*gX*/, std::int32_t /*gY*/, std::int32_t /*bX*/, std::int32_t /*bY*/, std::int32_t /*wX*/,
+      std::int32_t /*wY*/
+  ) {}
+  void colorInfoTfPower(void* /*data*/, wp_image_description_info_v1* /*info*/, std::uint32_t /*eexp*/) {}
+  void colorInfoTargetPrimaries(
+      void* /*data*/, wp_image_description_info_v1* /*info*/, std::int32_t /*rX*/, std::int32_t /*rY*/,
+      std::int32_t /*gX*/, std::int32_t /*gY*/, std::int32_t /*bX*/, std::int32_t /*bY*/, std::int32_t /*wX*/,
+      std::int32_t /*wY*/
+  ) {}
+  void colorInfoTargetLuminance(
+      void* /*data*/, wp_image_description_info_v1* /*info*/, std::uint32_t /*minLum*/, std::uint32_t /*maxLum*/
+  ) {}
+  void colorInfoTargetMaxCll(void* /*data*/, wp_image_description_info_v1* /*info*/, std::uint32_t /*maxCll*/) {}
+  void colorInfoTargetMaxFall(void* /*data*/, wp_image_description_info_v1* /*info*/, std::uint32_t /*maxFall*/) {}
+
+  void colorInfoDone(void* data, wp_image_description_info_v1* /*info*/) {
+    // `done` is a destructor event — libwayland frees the info proxy, we must not.
+    auto* probe = static_cast<OutputColorProbe*>(data);
+    const bool isHdr = probe->tfNamed == kTfNamedSt2084Pq || probe->tfNamed == kTfNamedHlg;
+    if (probe->self != nullptr) {
+      probe->self->onOutputColorDescription(
+          probe->output, isHdr, probe->tfNamed, probe->primariesNamed, probe->hasLuminance, probe->maxLuminance
+      );
+    }
+    if (probe->desc != nullptr) {
+      wp_image_description_v1_destroy(probe->desc);
+    }
+    delete probe;
+  }
+
+  const wp_image_description_info_v1_listener kImageDescriptionInfoListener = {
+      .done = colorInfoDone,
+      .icc_file = colorInfoIccFile,
+      .primaries = colorInfoPrimaries,
+      .primaries_named = colorInfoPrimariesNamed,
+      .tf_power = colorInfoTfPower,
+      .tf_named = colorInfoTfNamed,
+      .luminances = colorInfoLuminances,
+      .target_primaries = colorInfoTargetPrimaries,
+      .target_luminance = colorInfoTargetLuminance,
+      .target_max_cll = colorInfoTargetMaxCll,
+      .target_max_fall = colorInfoTargetMaxFall,
+  };
+
+  void colorDescReady(void* data, wp_image_description_v1* desc, std::uint32_t /*identity*/) {
+    auto* probe = static_cast<OutputColorProbe*>(data);
+    auto* info = wp_image_description_v1_get_information(desc);
+    wp_image_description_info_v1_add_listener(info, &kImageDescriptionInfoListener, probe);
+  }
+  void colorDescFailed(void* data, wp_image_description_v1* desc, std::uint32_t cause, const char* msg) {
+    auto* probe = static_cast<OutputColorProbe*>(data);
+    kLog.info("output {} colour description failed: cause={} ({})", probe->label, cause, msg != nullptr ? msg : "");
+    wp_image_description_v1_destroy(desc);
+    delete probe;
+  }
+  const wp_image_description_v1_listener kImageDescriptionListener = {
+      .failed = colorDescFailed,
+      .ready = colorDescReady,
+  };
+
+  // Kick off a fresh read of an output's current image description.
+  void probeOutputImageDescription(
+      WaylandConnection* self, wl_output* output, wp_color_management_output_v1* colorOutput, std::string label
+  ) {
+    auto* desc = wp_color_management_output_v1_get_image_description(colorOutput);
+    if (desc == nullptr) {
+      return;
+    }
+    auto* probe = new OutputColorProbe{.self = self, .output = output, .label = std::move(label), .desc = desc};
+    wp_image_description_v1_add_listener(desc, &kImageDescriptionListener, probe);
+  }
+
+  void colorOutputImageDescriptionChanged(void* data, wp_color_management_output_v1* colorOutput) {
+    static_cast<WaylandConnection*>(data)->onOutputImageDescriptionChanged(colorOutput);
+  }
+  const wp_color_management_output_v1_listener kColorOutputListener = {
+      .image_description_changed = colorOutputImageDescriptionChanged,
   };
 
 } // namespace
@@ -707,6 +878,62 @@ WaylandOutput* WaylandConnection::findOutputByXdg(zxdg_output_v1* xdgOutput) {
   return nullptr;
 }
 
+WaylandOutput* WaylandConnection::findOutputByColorOutput(wp_color_management_output_v1* colorOutput) {
+  for (auto& out : m_outputs) {
+    if (out.colorOutput == colorOutput) {
+      return &out;
+    }
+  }
+  return nullptr;
+}
+
+void WaylandConnection::setupOutputColorManagement(WaylandOutput& output) {
+  if (m_colorManager == nullptr || output.output == nullptr || output.colorOutput != nullptr) {
+    return;
+  }
+  output.colorOutput = wp_color_manager_v1_get_output(m_colorManager, output.output);
+  if (output.colorOutput == nullptr) {
+    return;
+  }
+  wp_color_management_output_v1_add_listener(output.colorOutput, &kColorOutputListener, this);
+  // get_output does not replay state; read the current description once now.
+  probeOutputImageDescription(this, output.output, output.colorOutput, outputLabel(output));
+}
+
+void WaylandConnection::onOutputImageDescriptionChanged(wp_color_management_output_v1* colorOutput) {
+  const WaylandOutput* out = findOutputByColorOutput(colorOutput);
+  std::string label = out != nullptr ? outputLabel(*out) : std::string("?");
+  wl_output* const wlOutput = out != nullptr ? out->output : nullptr;
+  probeOutputImageDescription(this, wlOutput, colorOutput, std::move(label));
+}
+
+void WaylandConnection::onOutputColorDescription(
+    wl_output* output, bool hdr, int transferFunction, int primaries, bool hasLuminance, std::uint32_t maxLuminance
+) {
+  WaylandOutput* out = findOutputByWl(output);
+  const std::string label = out != nullptr ? outputLabel(*out) : std::string("?");
+  const bool changed = out == nullptr || !out->hdrDetected || out->hdr != hdr;
+  if (out != nullptr) {
+    out->hdr = hdr;
+    out->hdrDetected = true;
+  }
+  // Log first detection and every flip, but stay quiet on redundant repeats.
+  if (!changed) {
+    return;
+  }
+  if (hasLuminance) {
+    kLog.info(
+        "output {} colour state: {} (transfer_function={}, primaries={}, max_luminance={} cd/m^2)", label,
+        hdr ? "HDR" : "SDR", transferFunction, primaries, maxLuminance
+    );
+  } else {
+    kLog.info(
+        "output {} colour state: {} (transfer_function={}, primaries={})", label, hdr ? "HDR" : "SDR", transferFunction,
+        primaries
+    );
+  }
+}
+
 void WaylandConnection::handleGlobal(
     void* data, wl_registry* registry, std::uint32_t name, const char* interface, std::uint32_t version
 ) {
@@ -723,6 +950,9 @@ void WaylandConnection::handleGlobalRemove(void* data, wl_registry* /*registry*/
     }
     if (self->m_outputRemovedCallback && output.output != nullptr) {
       self->m_outputRemovedCallback(output.output);
+    }
+    if (output.colorOutput != nullptr) {
+      wp_color_management_output_v1_destroy(output.colorOutput);
     }
     if (output.xdgOutput != nullptr) {
       zxdg_output_v1_destroy(output.xdgOutput);
@@ -913,6 +1143,19 @@ void WaylandConnection::bindGlobal(
     return;
   }
 
+  if (interfaceName == wp_color_manager_v1_interface.name) {
+    const auto bindVersion = std::min(version, 1u);
+    m_colorManager =
+        static_cast<wp_color_manager_v1*>(wl_registry_bind(registry, name, &wp_color_manager_v1_interface, bindVersion));
+    wp_color_manager_v1_add_listener(m_colorManager, &kColorManagerListener, new ColorManagerCaps{});
+    kLog.info("bound wp_color_manager_v1 (compositor advertises color management)");
+    // Outputs that bound before the manager; later ones are handled on bind.
+    for (auto& output : m_outputs) {
+      setupOutputColorManagement(output);
+    }
+    return;
+  }
+
   if (interfaceName == hyprland_focus_grab_manager_v1_interface.name) {
     const auto bindVersion = std::min(version, kHyprlandFocusGrabManagerVersion);
     m_hyprlandFocusGrabManager = static_cast<hyprland_focus_grab_manager_v1*>(
@@ -1012,6 +1255,8 @@ void WaylandConnection::bindGlobal(
       m_outputs.back().xdgOutput = xdgOut;
       zxdg_output_v1_add_listener(xdgOut, &kXdgOutputListener, this);
     }
+    // Wire up per-output HDR detection (no-op without color management).
+    setupOutputColorManagement(m_outputs.back());
   }
 }
 
@@ -1122,6 +1367,18 @@ void WaylandConnection::cleanup() {
   if (m_screencopyManager != nullptr) {
     zwlr_screencopy_manager_v1_destroy(m_screencopyManager);
     m_screencopyManager = nullptr;
+  }
+
+  for (auto& out : m_outputs) {
+    if (out.colorOutput != nullptr) {
+      wp_color_management_output_v1_destroy(out.colorOutput);
+      out.colorOutput = nullptr;
+    }
+  }
+
+  if (m_colorManager != nullptr) {
+    wp_color_manager_v1_destroy(m_colorManager);
+    m_colorManager = nullptr;
   }
 
   if (m_viewporter != nullptr) {
