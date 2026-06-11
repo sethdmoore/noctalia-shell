@@ -18,10 +18,23 @@
 #define EGL_GENERATE_RESET_ON_VIDEO_MEMORY_PURGE_NV 0x334C
 #endif
 
+// GLES 3 renderable bit (EGL_KHR_create_context). Same value as EGL_OPENGL_ES3_BIT.
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+#define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+// EGL_EXT_pixel_format_float — lets a config request floating-point color buffers.
+#ifndef EGL_COLOR_COMPONENT_TYPE_EXT
+#define EGL_COLOR_COMPONENT_TYPE_EXT 0x3339
+#endif
+#ifndef EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT
+#define EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT 0x333B
+#endif
+
 namespace {
 
   constexpr Logger kLog("gl");
 
+  // Legacy 8-bit sRGB config (GLES 2). The unconditional fallback.
   constexpr EGLint kConfigAttributes[] = {
       EGL_SURFACE_TYPE,
       EGL_WINDOW_BIT,
@@ -38,9 +51,22 @@ namespace {
       EGL_NONE,
   };
 
-  constexpr EGLint kPlainContextAttributes[] = {
-      EGL_CONTEXT_CLIENT_VERSION,
-      2,
+  // fp16 (RGBA16F) GLES 3 config — the wide-colour HDR buffer (see chooseConfig).
+  constexpr EGLint kFloatConfigAttributes[] = {
+      EGL_SURFACE_TYPE,
+      EGL_WINDOW_BIT,
+      EGL_RENDERABLE_TYPE,
+      EGL_OPENGL_ES3_BIT_KHR,
+      EGL_COLOR_COMPONENT_TYPE_EXT,
+      EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT,
+      EGL_RED_SIZE,
+      16,
+      EGL_GREEN_SIZE,
+      16,
+      EGL_BLUE_SIZE,
+      16,
+      EGL_ALPHA_SIZE,
+      16,
       EGL_NONE,
   };
 
@@ -68,6 +94,27 @@ namespace {
     return false;
   }
 
+  // Log the per-channel sizes eglChooseConfig actually returned (it matches "at
+  // least" what we asked), so the log is the real answer to "are surfaces fp16?".
+  void logConfigDepth(EGLDisplay display, EGLConfig config) {
+    EGLint r = 0;
+    EGLint g = 0;
+    EGLint b = 0;
+    EGLint a = 0;
+    eglGetConfigAttrib(display, config, EGL_RED_SIZE, &r);
+    eglGetConfigAttrib(display, config, EGL_GREEN_SIZE, &g);
+    eglGetConfigAttrib(display, config, EGL_BLUE_SIZE, &b);
+    eglGetConfigAttrib(display, config, EGL_ALPHA_SIZE, &a);
+
+    EGLint componentType = 0;
+    const bool isFloat = eglGetConfigAttrib(display, config, EGL_COLOR_COMPONENT_TYPE_EXT, &componentType) == EGL_TRUE
+                         && componentType == EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT;
+    // Querying an unsupported attribute leaves an error latched; clear it.
+    eglGetError();
+
+    kLog.info("chosen EGLConfig: R{} G{} B{} A{} bits, component type {}", r, g, b, a, isFloat ? "float" : "fixed");
+  }
+
 } // namespace
 
 GlSharedContext::~GlSharedContext() { cleanup(); }
@@ -92,10 +139,7 @@ void GlSharedContext::initialize(wl_display* display, bool createSharedContext) 
     throw std::runtime_error("eglBindAPI failed");
   }
 
-  EGLint configCount = 0;
-  if (eglChooseConfig(m_display, kConfigAttributes, &m_config, 1, &configCount) != EGL_TRUE || configCount != 1) {
-    throw std::runtime_error("eglChooseConfig failed");
-  }
+  chooseConfig(eglQueryString(m_display, EGL_EXTENSIONS));
 
   buildContextAttributes();
 
@@ -107,6 +151,33 @@ void GlSharedContext::initialize(wl_display* display, bool createSharedContext) 
   }
 }
 
+void GlSharedContext::chooseConfig(const char* eglExtensions) {
+  // Prefer an fp16 (RGBA16F) GLES 3 config, else fall back to 8-bit GLES 2.
+  // Gated solely on EGL_EXT_pixel_format_float — the HDR colorspace is negotiated
+  // over wp_color_manager_v1, not via an EGL colorspace extension.
+  const bool hasPixelFormatFloat = hasExtension(eglExtensions, "EGL_EXT_pixel_format_float");
+  kLog.info("EGL HDR-relevant extensions: pixel_format_float={}", hasPixelFormatFloat ? "yes" : "no");
+
+  EGLint configCount = 0;
+  if (hasPixelFormatFloat
+      && eglChooseConfig(m_display, kFloatConfigAttributes, &m_config, 1, &configCount) == EGL_TRUE
+      && configCount == 1) {
+    m_colorPipeline = ColorPipeline::Float16;
+    m_glesMajorVersion = 3;
+    kLog.info("selected fp16 wide-colour config (GLES 3, RGBA16F)");
+    logConfigDepth(m_display, m_config);
+    return;
+  }
+
+  if (eglChooseConfig(m_display, kConfigAttributes, &m_config, 1, &configCount) != EGL_TRUE || configCount != 1) {
+    throw std::runtime_error("eglChooseConfig failed");
+  }
+  m_colorPipeline = ColorPipeline::Srgb8;
+  m_glesMajorVersion = 2;
+  kLog.info("selected 8-bit RGBA config (GLES 2{})", hasPixelFormatFloat ? "; fp16 config unavailable" : "");
+  logConfigDepth(m_display, m_config);
+}
+
 void GlSharedContext::buildContextAttributes() {
   const char* extensions = eglQueryString(m_display, EGL_EXTENSIONS);
   const bool hasRobustness = hasExtension(extensions, "EGL_EXT_create_context_robustness");
@@ -114,7 +185,7 @@ void GlSharedContext::buildContextAttributes() {
 
   m_contextAttributes.clear();
   m_contextAttributes.push_back(EGL_CONTEXT_CLIENT_VERSION);
-  m_contextAttributes.push_back(2);
+  m_contextAttributes.push_back(m_glesMajorVersion);
   if (hasRobustness) {
     m_contextAttributes.push_back(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT);
     m_contextAttributes.push_back(EGL_LOSE_CONTEXT_ON_RESET_EXT);
@@ -170,9 +241,10 @@ EGLContext GlSharedContext::createContextWithCurrentAttributes(EGLContext shareC
 }
 
 void GlSharedContext::usePlainContextAttributes() noexcept {
-  m_contextAttributes.assign(
-      kPlainContextAttributes, kPlainContextAttributes + (sizeof(kPlainContextAttributes) / sizeof(EGLint))
-  );
+  m_contextAttributes.clear();
+  m_contextAttributes.push_back(EGL_CONTEXT_CLIENT_VERSION);
+  m_contextAttributes.push_back(m_glesMajorVersion);
+  m_contextAttributes.push_back(EGL_NONE);
   m_contextAttributesRobust = false;
   m_resetNotificationEnabled = false;
   m_videoMemoryPurgeNotificationEnabled = false;
@@ -206,6 +278,8 @@ void GlSharedContext::cleanup() {
   eglTerminate(m_display);
   m_display = EGL_NO_DISPLAY;
   m_config = nullptr;
+  m_colorPipeline = ColorPipeline::Srgb8;
+  m_glesMajorVersion = 2;
   m_contextAttributes.clear();
   m_contextAttributesRobust = false;
   m_resetNotificationEnabled = false;

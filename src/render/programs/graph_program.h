@@ -5,7 +5,7 @@
 #include "render/core/shader_program.h"
 #include "render/core/texture_handle.h"
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 
 class GraphProgram {
 public:

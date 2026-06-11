@@ -7,7 +7,7 @@
 #include "render/core/texture_handle.h"
 #include "render/core/wallpaper_types.h"
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <array>
 #include <cstdint>
 

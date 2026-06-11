@@ -18,6 +18,8 @@ enum class TextureDataFormat {
   Alpha,
   LuminanceAlpha,
   Rgba,
+  // RGBA half-float (RGBA16F) upload path. Dormant until HDR decode produces it.
+  Half,
 };
 
 enum class TextureFilter {

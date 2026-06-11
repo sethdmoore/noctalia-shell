@@ -4,7 +4,7 @@
 #include "render/core/texture_handle.h"
 #include "render/core/texture_manager.h"
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <cstdint>
 
 class GlesFramebuffer final : public RenderFramebuffer {

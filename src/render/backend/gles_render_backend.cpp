@@ -6,7 +6,7 @@
 #include "render/gl_shared_context.h"
 #include "render/render_target.h"
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #include <chrono>
 #include <format>
@@ -134,6 +134,7 @@ void main() {
       }
 
       if (m_surface == EGL_NO_SURFACE) {
+        // Colorspace is negotiated via wp_color_manager_v1 on the wl_surface, not here.
         m_surface =
             eglCreateWindowSurface(m_display, m_config, reinterpret_cast<EGLNativeWindowType>(m_window), nullptr);
         if (m_surface == EGL_NO_SURFACE && !m_createFailureLogged) {

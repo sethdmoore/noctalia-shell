@@ -5,7 +5,7 @@
 #include "render/core/image_file_loader.h"
 #include "render/core/image_source_log.h"
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #include <cstring>
 #include <vector>
@@ -20,6 +20,7 @@ namespace {
 
   [[nodiscard]] GLuint toGlesTexture(TextureId id) noexcept { return static_cast<GLuint>(id.value()); }
 
+  // External pixel format (the layout of the client data passed to glTexImage2D).
   [[nodiscard]] GLenum toGlesFormat(TextureDataFormat format) noexcept {
     switch (format) {
     case TextureDataFormat::Alpha:
@@ -28,8 +29,24 @@ namespace {
       return GL_LUMINANCE_ALPHA;
     case TextureDataFormat::Rgba:
       return GL_RGBA;
+    case TextureDataFormat::Half:
+      return GL_RGBA;
     }
     return GL_RGBA;
+  }
+
+  // Sized internal format. 8-bit formats stay unsized (ES2); the Half path needs
+  // the sized GL_RGBA16F (ES3).
+  [[nodiscard]] GLint toGlesInternalFormat(TextureDataFormat format) noexcept {
+    if (format == TextureDataFormat::Half) {
+      return GL_RGBA16F;
+    }
+    return static_cast<GLint>(toGlesFormat(format));
+  }
+
+  // Component type of the client pixel data.
+  [[nodiscard]] GLenum toGlesType(TextureDataFormat format) noexcept {
+    return format == TextureDataFormat::Half ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
   }
 
   [[nodiscard]] GLint toGlesFilter(TextureFilter filter) noexcept {
@@ -242,7 +259,7 @@ bool GlesTextureManager::updateSubImage(
   const GLenum glFormat = toGlesFormat(format);
   glBindTexture(GL_TEXTURE_2D, toGlesTexture(handle.id));
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, glFormat, GL_UNSIGNED_BYTE, data);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, glFormat, toGlesType(format), data);
   return true;
 }
 
@@ -308,7 +325,9 @@ TextureHandle GlesTextureManager::uploadPixels(
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
   const GLenum glFormat = toGlesFormat(format);
-  glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(glFormat), width, height, 0, glFormat, GL_UNSIGNED_BYTE, data);
+  glTexImage2D(
+      GL_TEXTURE_2D, 0, toGlesInternalFormat(format), width, height, 0, glFormat, toGlesType(format), data
+  );
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   if (mipmap) {

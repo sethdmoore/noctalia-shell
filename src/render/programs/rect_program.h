@@ -4,7 +4,7 @@
 #include "render/core/render_styles.h"
 #include "render/core/shader_program.h"
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 
 class RectProgram {
 public:

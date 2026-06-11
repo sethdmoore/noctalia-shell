@@ -102,6 +102,15 @@ if not gles2_dep.found()
   gles2_dep = dependency('epoxy')
 endif
 
+# GLES 3 (GLES3/gl3.h) is needed for the fp16 path but ships in the same
+# libGLESv2 / libglvnd as 'glesv2' with no 'glesv3' pkg-config module, so probe
+# the header directly for GL_RGBA16F rather than depending on a nonexistent dep.
+if not cpp.has_header_symbol('GLES3/gl3.h', 'GL_RGBA16F', dependencies: gles2_dep)
+  error('Noctalia requires OpenGL ES 3 headers (GLES3/gl3.h with GL_RGBA16F). ' +
+        'Install your GLES 3 development package (e.g. libgles-dev, ' +
+        'mesa-libGLES-devel, or equivalent).')
+endif
+
 # ── Vendored: dr_wav (single-file WAV decoder) ───────────────────────────────
 _drwav_lib = static_library('dr_wav',
   'third_party/dr_wav/dr_wav.c',
