@@ -1056,6 +1056,7 @@
     "plugins": {
       "plugins": {
         "configure": "Configure",
+        "deprecated": "deprecated",
         "empty": "No plugins found. Add a source, or check your network.",
         "loading": "Loading plugins...",
         "refreshing": "Refreshing plugins...",

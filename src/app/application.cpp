@@ -407,6 +407,7 @@ void Application::run(std::function<void()> startupReadyCallback) {
     m_configService.addReloadCallback([this]() {
       if (m_configService.lastChange().plugins) {
         m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
+        m_settingsWindow.onPluginsChanged();
       }
     });
     // A git update() advances a source without a config change, so it bypasses the
@@ -1876,8 +1877,8 @@ void Application::initIpc() {
           std::string out;
           for (const auto& s : m_pluginManager.list()) {
             out += std::format(
-                "{} {} [{}]{}{}\n", s.id, s.version.empty() ? "-" : s.version, s.source, s.enabled ? " enabled" : "",
-                s.compatible ? "" : " incompatible"
+                "{} [{}] {}{}{}{}\n", s.id, s.source, s.version.empty() ? "-" : s.version, s.enabled ? " enabled" : "",
+                s.compatible ? "" : " incompatible", s.deprecated ? " deprecated" : ""
             );
           }
           return out.empty() ? "(no plugins)\n" : out;

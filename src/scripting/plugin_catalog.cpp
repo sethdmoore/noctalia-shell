@@ -15,14 +15,15 @@
 #include <fstream>
 #include <sstream>
 #include <system_error>
+#include <utility>
 
 namespace scripting {
 
   namespace {
     const Logger kLog{"plugins"};
 
-    std::string tableString(const toml::table& tbl, std::string_view key) {
-      return tbl[key].value<std::string>().value_or(std::string{});
+    std::string tableString(const toml::table& tbl, std::string_view key, std::string fallback = {}) {
+      return tbl[key].value<std::string>().value_or(std::move(fallback));
     }
 
     bool readFileToString(const std::filesystem::path& path, std::string& out) {
@@ -49,7 +50,11 @@ namespace scripting {
           .tags = m.tags,
           .version = m.version,
           .author = m.author,
+          .icon = m.icon,
+          .description = m.description,
+          .license = m.license,
           .minNoctalia = m.minNoctalia,
+          .deprecated = m.deprecated,
       };
       fillCompat(e);
       return e;
@@ -103,13 +108,22 @@ namespace scripting {
           .tags = {},
           .version = tableString(*tbl, "version"),
           .author = tableString(*tbl, "author"),
+          .icon = tableString(*tbl, "icon"),
+          .description = tableString(*tbl, "description"),
+          .license = tableString(*tbl, "license", "MIT"),
           .minNoctalia = tableString(*tbl, "min_noctalia"),
+          .deprecated = (*tbl)["deprecated"].value<bool>().value_or(false),
       };
       if (e.id.empty()) {
-        continue; // a catalog row without an id is unusable
+        kLog.warn("catalog row missing mandatory key 'id'");
+        continue;
       }
       if (!isValidPluginId(e.id)) {
         kLog.warn("catalog row has invalid plugin id '{}'; expected author/plugin", e.id);
+        continue;
+      }
+      if (e.name.empty()) {
+        kLog.warn("catalog row '{}' missing mandatory key 'name'", e.id);
         continue;
       }
       if (const auto* tags = (*tbl)["tags"].as_array()) {

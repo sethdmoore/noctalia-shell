@@ -900,10 +900,7 @@ void SettingsWindow::onFontChanged() {
   }
 }
 
-void SettingsWindow::onExternalOptionsChanged() {
-  markPluginListDirty();
-  requestSceneRebuild();
-}
+void SettingsWindow::onExternalOptionsChanged() { requestSceneRebuild(); }
 
 void SettingsWindow::onPluginsChanged() {
   markPluginListDirty();

@@ -991,6 +991,17 @@ plugin_git_export_test = executable('plugin_git_export_test',
 
 test('plugin_git_export', plugin_git_export_test)
 
+plugin_manifest_test = executable('plugin_manifest_test',
+  sources: files(
+    'tests/plugin_manifest_test.cpp',
+    'src/scripting/plugin_manifest.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('plugin_manifest', plugin_manifest_test)
+
 config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
   sources: files(
     'tests/config_schema_roundtrip_test.cpp',

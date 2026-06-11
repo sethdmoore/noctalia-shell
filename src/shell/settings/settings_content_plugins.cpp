@@ -35,6 +35,16 @@ namespace settings {
       });
     }
 
+    bool pluginEnabled(const scripting::PluginStatus& plugin, const SettingsPluginsContext& ctx) {
+      if (ctx.config == nullptr) {
+        return plugin.enabled;
+      }
+      return std::find(ctx.config->plugins.enabled.begin(), ctx.config->plugins.enabled.end(), plugin.id)
+          != ctx.config->plugins.enabled.end();
+    }
+
+    std::string_view pluginDisplayName(const scripting::PluginStatus& plugin) { return plugin.name; }
+
     std::unique_ptr<Flex> sourceRow(const PluginSourceConfig& source, const SettingsPluginsContext& ctx, float scale) {
       auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
       Flex* r = row.get();
@@ -102,26 +112,42 @@ namespace settings {
     pluginRow(const scripting::PluginStatus& plugin, const SettingsPluginsContext& ctx, float scale) {
       auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
       Flex* r = row.get();
-      bool enabled = plugin.enabled;
-      if (ctx.config != nullptr) {
-        enabled = std::find(ctx.config->plugins.enabled.begin(), ctx.config->plugins.enabled.end(), plugin.id)
-            != ctx.config->plugins.enabled.end();
-      }
+      const bool enabled = pluginEnabled(plugin, ctx);
+
+      r->addChild(
+          ui::glyph({
+              .glyph = plugin.icon.empty() ? std::string("apps") : plugin.icon,
+              .glyphSize = Style::fontSizeHeader * scale,
+              .color = colorSpecFromRole(ColorRole::Primary),
+              .width = Style::controlHeightSm * scale,
+              .height = Style::controlHeightSm * scale,
+          })
+      );
 
       auto info = ui::column({.align = FlexAlign::Start, .gap = 2.0F * scale, .flexGrow = 1.0F});
       auto title = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
-      title->addChild(makeLabel(plugin.id, Style::fontSizeBody * scale, ColorRole::OnSurface, FontWeight::Medium));
+      const std::string version = plugin.version.empty() ? std::string("?") : plugin.version;
+      title->addChild(
+          makeLabel(pluginDisplayName(plugin), Style::fontSizeBody * scale, ColorRole::OnSurface, FontWeight::Medium)
+      );
+      title->addChild(makeLabel(plugin.source, Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant));
+      title->addChild(makeLabel("v" + version, Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant));
       if (!plugin.compatible) {
         title->addChild(makeLabel(
             i18n::tr("settings.plugins.plugins.requires-newer-noctalia"), Style::fontSizeMini * scale, ColorRole::Error,
             FontWeight::Bold
         ));
       }
+      if (plugin.deprecated) {
+        title->addChild(makeLabel(
+            i18n::tr("settings.plugins.plugins.deprecated"), Style::fontSizeMini * scale, ColorRole::Secondary,
+            FontWeight::Bold
+        ));
+      }
       info->addChild(std::move(title));
-      const std::string version = plugin.version.empty() ? std::string("?") : plugin.version;
-      info->addChild(
-          makeLabel("v" + version + " · " + plugin.source, Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant)
-      );
+      if (!plugin.description.empty()) {
+        info->addChild(makeLabel(plugin.description, Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant));
+      }
       r->addChild(std::move(info));
 
       const auto* manifest = scripting::PluginRegistry::instance().findManifest(plugin.id);
@@ -417,7 +443,24 @@ namespace settings {
           i18n::tr("settings.plugins.plugins.empty"), Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant
       ));
     }
-    for (const auto& plugin : ctx.plugins) {
+    std::vector<scripting::PluginStatus> plugins = ctx.plugins;
+    std::sort(plugins.begin(), plugins.end(), [&](const auto& a, const auto& b) {
+      const bool aEnabled = pluginEnabled(a, ctx);
+      const bool bEnabled = pluginEnabled(b, ctx);
+      if (aEnabled != bEnabled) {
+        return aEnabled;
+      }
+      const std::string_view aName = pluginDisplayName(a);
+      const std::string_view bName = pluginDisplayName(b);
+      if (aName != bName) {
+        return aName < bName;
+      }
+      if (a.source != b.source) {
+        return a.source < b.source;
+      }
+      return a.id < b.id;
+    });
+    for (const auto& plugin : plugins) {
       section->addChild(pluginRow(plugin, ctx, scale));
     }
   }

@@ -29,9 +29,14 @@ namespace scripting {
 
   struct PluginStatus {
     std::string id;
+    std::string name;
     std::string version;
+    std::string icon;
+    std::string description;
+    std::string license = "MIT";
     std::string source; // source name ("local" for the implicit dev source)
     bool compatible = true;
+    bool deprecated = false;
     bool enabled = false;
   };
 

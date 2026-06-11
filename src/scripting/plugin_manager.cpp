@@ -469,9 +469,14 @@ namespace scripting {
         out.push_back(
             PluginStatus{
                 .id = entry.id,
+                .name = entry.name,
                 .version = entry.version,
+                .icon = entry.icon,
+                .description = entry.description,
+                .license = entry.license,
                 .source = sourceName,
                 .compatible = entry.compatible,
+                .deprecated = entry.deprecated,
                 .enabled = enabledSet.contains(entry.id),
             }
         );
